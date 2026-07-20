@@ -12,6 +12,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Table(name: 'card')]
 #[ORM\Index(name: 'idx_card_oracle_id', columns: ['oracle_id'])]
 #[ORM\Index(name: 'idx_card_set_collector', columns: ['set_code', 'collector_number'])]
+#[ORM\Index(name: 'idx_card_name', columns: ['name'])]
 class Card
 {
     #[ORM\Id]
@@ -62,6 +63,12 @@ class Card
 
     #[ORM\Column]
     private bool $isCommanderLegal = false;
+
+    #[ORM\Column(type: 'decimal', precision: 10, scale: 2, nullable: true)]
+    private ?string $priceEur = null;
+
+    #[ORM\Column(type: 'decimal', precision: 10, scale: 2, nullable: true)]
+    private ?string $priceEurFoil = null;
 
     #[ORM\Column]
     private \DateTimeImmutable $resolvedAt;
@@ -263,9 +270,40 @@ class Card
         return $this;
     }
 
+    public function getPriceEur(): ?string
+    {
+        return $this->priceEur;
+    }
+
+    public function setPriceEur(?string $priceEur): static
+    {
+        $this->priceEur = $priceEur;
+
+        return $this;
+    }
+
+    public function getPriceEurFoil(): ?string
+    {
+        return $this->priceEurFoil;
+    }
+
+    public function setPriceEurFoil(?string $priceEurFoil): static
+    {
+        $this->priceEurFoil = $priceEurFoil;
+
+        return $this;
+    }
+
     public function getResolvedAt(): \DateTimeImmutable
     {
         return $this->resolvedAt;
+    }
+
+    public function setResolvedAt(\DateTimeImmutable $resolvedAt): static
+    {
+        $this->resolvedAt = $resolvedAt;
+
+        return $this;
     }
 
     public function toArray(): array
@@ -287,6 +325,8 @@ class Card
             'imageNormal' => $this->imageNormal,
             'isBasicLand' => $this->isBasicLand,
             'isCommanderLegal' => $this->isCommanderLegal,
+            'priceEur' => $this->priceEur,
+            'priceEurFoil' => $this->priceEurFoil,
             'resolvedAt' => $this->resolvedAt->format(\DateTimeInterface::ATOM),
         ];
     }

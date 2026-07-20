@@ -65,9 +65,55 @@ const result = computed(() => {
   })
 })
 
+/** Tente de valoriser les cartes manquantes non résolues localement (nom seul), une seule fois par nom. */
+const attemptedNames = new Set<string>()
+watch(
+  result,
+  async (newResult) => {
+    if (!newResult) return
+    const namesToTry = newResult.unresolvedEntries
+      .map((entry) => entry.name)
+      .filter((name) => !attemptedNames.has(name.toLowerCase()))
+    if (namesToTry.length === 0) return
+    namesToTry.forEach((name) => attemptedNames.add(name.toLowerCase()))
+    await store.resolveByNames(namesToTry)
+  },
+  { immediate: true },
+)
+
 function thumbnailFor(name: string) {
   return store.lookup.value.byName(name)
 }
+
+interface MissingWithPrice {
+  name: string
+  needed: number
+  owned: number
+  missingQty: number
+  unitPrice: string | null | undefined
+  subtotal: number | null
+}
+
+const missingWithPrices = computed<MissingWithPrice[]>(() => {
+  if (!result.value) return []
+  return result.value.missing.map((item) => {
+    const card = thumbnailFor(item.name)
+    const missingQty = item.needed - item.owned
+    const unitPrice = card?.priceEur
+    const subtotal = unitPrice ? Number(unitPrice) * missingQty : null
+    return { name: item.name, needed: item.needed, owned: item.owned, missingQty, unitPrice, subtotal }
+  })
+})
+
+const estimatedCost = computed(() => {
+  let total = 0
+  let withoutPrice = 0
+  for (const item of missingWithPrices.value) {
+    if (item.subtotal !== null) total += item.subtotal
+    else withoutPrice += 1
+  }
+  return { total, withoutPrice }
+})
 </script>
 
 <template>
@@ -154,10 +200,19 @@ function thumbnailFor(name: string) {
       </div>
 
       <div v-if="result.missing.length">
-        <h2 class="mb-3 text-lg font-semibold">Cartes manquantes</h2>
+        <div class="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <h2 class="text-lg font-semibold">Cartes manquantes</h2>
+          <p class="text-sm text-slate-600 dark:text-slate-300">
+            Coût estimé des manquantes :
+            <span class="font-semibold text-slate-900 dark:text-white">{{ formatEur(estimatedCost.total.toFixed(2)) }}</span>
+            <span v-if="estimatedCost.withoutPrice > 0" class="ml-1 text-xs text-slate-400 dark:text-slate-500">
+              ({{ estimatedCost.withoutPrice }} carte{{ estimatedCost.withoutPrice > 1 ? 's' : '' }} sans prix)
+            </span>
+          </p>
+        </div>
         <ul class="space-y-2">
           <li
-            v-for="(item, index) in result.missing"
+            v-for="(item, index) in missingWithPrices"
             :key="index"
             class="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-800"
           >
@@ -166,8 +221,14 @@ function thumbnailFor(name: string) {
               <p class="font-medium">{{ item.name }}</p>
               <p class="text-xs text-slate-500 dark:text-slate-400">{{ item.owned }}/{{ item.needed }} possédée(s)</p>
             </div>
+            <div class="text-right text-xs text-slate-500 dark:text-slate-400">
+              <p>{{ formatEur(item.unitPrice) }} / u.</p>
+              <p class="font-medium text-slate-700 dark:text-slate-300">
+                {{ item.subtotal !== null ? formatEur(item.subtotal.toFixed(2)) : '—' }}
+              </p>
+            </div>
             <span class="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/40 dark:text-red-300">
-              -{{ item.needed - item.owned }}
+              -{{ item.missingQty }}
             </span>
           </li>
         </ul>

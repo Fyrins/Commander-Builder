@@ -44,6 +44,8 @@ export interface ResolvedCard {
   isBasicLand: boolean
   isCommanderLegal: boolean
   lang: string
+  priceEur?: string | null
+  priceEurFoil?: string | null
 }
 
 /** Index de résolution de cartes, par identifiant Scryfall, impression ou nom EN. */

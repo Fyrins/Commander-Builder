@@ -27,4 +27,20 @@ class CardRepository extends ServiceEntityRepository
             ->getQuery()
             ->getOneOrNullResult();
     }
+
+    /**
+     * Résout une carte par son nom EN exact, y compris pour les cartes recto-verso
+     * dont le nom complet est "Front // Back" alors que l'appelant ne donne que "Front"
+     * (ex : identifiants EDHREC). Insensible à la casse.
+     */
+    public function findOneByName(string $name): ?Card
+    {
+        return $this->createQueryBuilder('c')
+            ->andWhere('LOWER(c.name) = LOWER(:name) OR LOWER(c.name) LIKE LOWER(:namePrefix)')
+            ->setParameter('name', $name)
+            ->setParameter('namePrefix', $name . ' //%')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }

@@ -55,6 +55,7 @@ const slug = computed(() => {
 const edhrecData = ref<EdhrecResponse | null>(null)
 const edhrecError = ref('')
 const edhrecLoading = ref(false)
+const pricesLoading = ref(false)
 
 watch(
   slug,
@@ -71,6 +72,18 @@ watch(
       edhrecError.value = status === 404 ? 'Commandant introuvable sur EDHREC.' : 'Erreur lors de la récupération des données EDHREC.'
     } finally {
       edhrecLoading.value = false
+    }
+
+    if (edhrecData.value) {
+      const names = Array.from(new Set(edhrecData.value.cardlists.flatMap((list) => list.cards.map((card) => card.name))))
+      if (names.length > 0) {
+        pricesLoading.value = true
+        try {
+          await store.resolveByNames(names)
+        } finally {
+          pricesLoading.value = false
+        }
+      }
     }
   },
   { immediate: true },
@@ -134,6 +147,23 @@ const priorityPurchases = computed(() =>
 function thumbnailFor(name: string) {
   return store.lookup.value.byName(name)
 }
+
+function priceFor(name: string): string | null | undefined {
+  return thumbnailFor(name)?.priceEur
+}
+
+/** Budget pour compléter le deck moyen : somme des prix des manquantes uniques (1 exemplaire chacune). */
+const budgetToComplete = computed(() => {
+  let total = 0
+  let withoutPrice = 0
+  for (const card of allCardsFlat.value) {
+    if (isOwned(card.name)) continue
+    const price = priceFor(card.name)
+    if (price) total += Number(price)
+    else withoutPrice += 1
+  }
+  return { total, withoutPrice }
+})
 </script>
 
 <template>
@@ -196,6 +226,8 @@ function thumbnailFor(name: string) {
     <p v-if="edhrecError" class="text-sm text-red-600 dark:text-red-400">{{ edhrecError }}</p>
 
     <template v-if="edhrecData">
+      <p v-if="pricesLoading" class="text-sm text-slate-500 dark:text-slate-400">Récupération des prix…</p>
+
       <section class="space-y-4 rounded-xl border border-slate-200 p-6 dark:border-slate-800">
         <div class="flex flex-wrap items-center gap-6">
           <div
@@ -211,6 +243,13 @@ function thumbnailFor(name: string) {
             <p class="text-sm text-slate-500 dark:text-slate-400">
               Pondérée par le taux d'inclusion de chaque carte sur EDHREC.
             </p>
+            <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
+              Budget pour compléter le deck moyen :
+              <span class="font-semibold text-slate-900 dark:text-white">{{ formatEur(budgetToComplete.total.toFixed(2)) }}</span>
+              <span v-if="budgetToComplete.withoutPrice > 0" class="ml-1 text-xs text-slate-400 dark:text-slate-500">
+                ({{ budgetToComplete.withoutPrice }} carte{{ budgetToComplete.withoutPrice > 1 ? 's' : '' }} sans prix)
+              </span>
+            </p>
           </div>
         </div>
 
@@ -225,6 +264,7 @@ function thumbnailFor(name: string) {
               <CardHoverImage :small="thumbnailFor(card.name)?.imageSmall" :normal="thumbnailFor(card.name)?.imageNormal" :alt="card.name" />
               <span class="flex-1 font-medium">{{ card.name }}</span>
               <span class="text-xs text-slate-500 dark:text-slate-400">{{ Math.round(card.inclusion * 1000) / 10 }}% des decks</span>
+              <span class="text-right text-xs font-medium text-slate-600 dark:text-slate-300">{{ formatEur(priceFor(card.name)) }}</span>
             </li>
           </ul>
         </div>
@@ -240,6 +280,9 @@ function thumbnailFor(name: string) {
           >
             <span class="flex-1 truncate" :title="card.name">{{ card.name }}</span>
             <span class="text-xs text-slate-500 dark:text-slate-400">{{ Math.round(card.inclusion * 1000) / 10 }}%</span>
+            <span v-if="!isOwned(card.name)" class="text-right text-xs font-medium text-slate-600 dark:text-slate-300">
+              {{ formatEur(priceFor(card.name)) }}
+            </span>
             <span
               class="rounded-full px-2 py-0.5 text-xs font-medium"
               :class="isOwned(card.name)

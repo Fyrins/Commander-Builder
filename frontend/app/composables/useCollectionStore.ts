@@ -37,6 +37,7 @@ interface ResolveIdentifier {
   scryfallId?: string
   set?: string
   collectorNumber?: string
+  name?: string
 }
 
 interface ResolveResponse {
@@ -129,6 +130,24 @@ export function useCollectionStore() {
         resolvedCards.value.set(card.scryfallId, card)
       }
       progress.value = { done: Math.min(i + chunk.length, identifiers.length), total: identifiers.length }
+    }
+    rebuildLookup()
+  }
+
+  /** Résout par lots (≤300) une liste de noms EN, en accumulant les cartes obtenues (même mécanique que resolveIdentifiers). */
+  async function resolveByNames(names: string[]): Promise<void> {
+    if (names.length === 0) return
+
+    for (let i = 0; i < names.length; i += CHUNK_SIZE) {
+      const chunk = names.slice(i, i + CHUNK_SIZE)
+      const response = await $fetch<ResolveResponse>('/api/cards/resolve', {
+        method: 'POST',
+        credentials: 'include',
+        body: { identifiers: chunk.map((name) => ({ name })) },
+      })
+      for (const card of response.cards) {
+        resolvedCards.value.set(card.scryfallId, card)
+      }
     }
     rebuildLookup()
   }
@@ -282,5 +301,6 @@ export function useCollectionStore() {
     deleteDeck,
     decksForEngine,
     rebuildPool,
+    resolveByNames,
   }
 }

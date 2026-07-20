@@ -14,6 +14,7 @@ use Symfony\Component\Routing\Attribute\Route;
 class CardController extends AbstractController
 {
     private const MAX_IDENTIFIERS = 300;
+    private const CACHE_TTL_DAYS = 7;
 
     #[Route('/api/cards/resolve', name: 'api_cards_resolve', methods: ['POST'])]
     public function resolve(Request $request, CardRepository $cardRepository, ScryfallClient $scryfallClient, EntityManagerInterface $entityManager): JsonResponse
@@ -45,9 +46,11 @@ class CardController extends AbstractController
                 $card = $cardRepository->find((string) $identifier['scryfallId']);
             } elseif (!empty($identifier['set']) && isset($identifier['collectorNumber'])) {
                 $card = $cardRepository->findOneBySetAndCollectorNumber((string) $identifier['set'], (string) $identifier['collectorNumber']);
+            } elseif (!empty($identifier['name'])) {
+                $card = $cardRepository->findOneByName((string) $identifier['name']);
             }
 
-            if ($card) {
+            if ($card && !$this->isStale($card)) {
                 $resolvedCards[$card->getScryfallId()] = $card;
                 ++$fromCache;
             } else {
@@ -62,6 +65,10 @@ class CardController extends AbstractController
             $scryfallIdentifiers = array_map(static function (array $identifier) {
                 if (!empty($identifier['scryfallId'])) {
                     return ['id' => $identifier['scryfallId']];
+                }
+
+                if (!empty($identifier['name'])) {
+                    return ['name' => (string) $identifier['name']];
                 }
 
                 return [
@@ -90,6 +97,23 @@ class CardController extends AbstractController
                 'from_scryfall' => $fromScryfall,
             ],
         ]);
+    }
+
+    /**
+     * Une carte en cache dont la résolution date de plus de CACHE_TTL_DAYS jours
+     * est considérée comme périmée (notamment pour les prix, qui bougent).
+     * Une carte sans aucun prix EUR connu est aussi traitée comme périmée : soit
+     * elle a été mise en cache avant l'introduction des prix (à rattraper une
+     * fois), soit Scryfall n'avait pas encore de cote Cardmarket au moment de la
+     * résolution (à retenter, sans coût significatif vu le rythme des requêtes).
+     */
+    private function isStale(Card $card): bool
+    {
+        if ($card->getPriceEur() === null && $card->getPriceEurFoil() === null) {
+            return true;
+        }
+
+        return $card->getResolvedAt() < new \DateTimeImmutable(sprintf('-%d days', self::CACHE_TTL_DAYS));
     }
 
     /**
@@ -134,12 +158,18 @@ class CardController extends AbstractController
         $card->setImageSmall($imageUris['small'] ?? null);
         $card->setImageNormal($imageUris['normal'] ?? null);
 
+        $prices = $scryfallCard['prices'] ?? [];
+        $card->setPriceEur(isset($prices['eur']) && $prices['eur'] !== null ? (string) $prices['eur'] : null);
+        $card->setPriceEurFoil(isset($prices['eur_foil']) && $prices['eur_foil'] !== null ? (string) $prices['eur_foil'] : null);
+
         $typeLine = $card->getTypeLine();
         $card->setIsBasicLand(str_contains($typeLine, 'Basic Land'));
         $card->setIsCommanderLegal(
             str_contains($typeLine, 'Legendary Creature')
             || str_contains((string) $oracleText, 'can be your commander')
         );
+
+        $card->setResolvedAt(new \DateTimeImmutable());
 
         $entityManager->persist($card);
 
