@@ -43,7 +43,7 @@ const filteredCommanders = computed(() => {
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="mb-1 text-2xl font-semibold">Commandants</h1>
+      <h1 class="mb-1 text-2xl font-semibold">Mes commandants</h1>
       <p class="text-sm text-slate-500 dark:text-slate-400">
         Cartes légales comme commandant, réellement présentes dans votre pool (collection + decks inclus).
       </p>

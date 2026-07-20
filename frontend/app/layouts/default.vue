@@ -5,7 +5,7 @@ const router = useRouter()
 
 const navItems = [
   { to: '/', label: 'Inventaire' },
-  { to: '/commanders', label: 'Commandants' },
+  { to: '/commanders', label: 'Mes commandants' },
   { to: '/compare', label: 'Comparateur' },
   { to: '/edhrec', label: 'EDHREC' },
 ]
