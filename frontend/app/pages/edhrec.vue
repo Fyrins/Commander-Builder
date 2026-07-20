@@ -373,7 +373,7 @@ function openCardDetail(name: string): void {
 
     <div v-if="prefillSlug" class="flex items-center gap-3 rounded-md bg-slate-100 px-3 py-2 text-sm dark:bg-slate-800">
       <span>Commandant pré-rempli : <strong>{{ prefillSlug }}</strong></span>
-      <button type="button" class="text-xs underline hover:text-slate-700 dark:hover:text-slate-200" @click="clearPrefill">
+      <button type="button" class="btn btn--ghost px-2 py-1 text-xs underline" @click="clearPrefill">
         Changer
       </button>
     </div>
@@ -382,16 +382,16 @@ function openCardDetail(name: string): void {
       <div class="flex gap-2">
         <button
           type="button"
-          class="rounded-md px-3 py-1.5 text-sm font-medium"
-          :class="inputMode === 'pool' ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'border border-slate-300 text-slate-600 dark:border-slate-700 dark:text-slate-300'"
+          class="btn"
+          :class="inputMode === 'pool' ? 'btn--primary' : 'btn--secondary'"
           @click="inputMode = 'pool'"
         >
           Un de mes commandants
         </button>
         <button
           type="button"
-          class="rounded-md px-3 py-1.5 text-sm font-medium"
-          :class="inputMode === 'free' ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'border border-slate-300 text-slate-600 dark:border-slate-700 dark:text-slate-300'"
+          class="btn"
+          :class="inputMode === 'free' ? 'btn--primary' : 'btn--secondary'"
           @click="inputMode = 'free'"
         >
           Rechercher un commandant
@@ -412,13 +412,8 @@ function openCardDetail(name: string): void {
       <div v-else class="max-w-sm space-y-2">
         <div v-if="selectedFreeCommander" class="flex flex-wrap items-center gap-2 text-sm">
           <span>Commandant : <strong>{{ selectedFreeCommander.name }}</strong></span>
-          <span
-            v-if="!commanderOwned"
-            class="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/40 dark:text-red-300"
-          >
-            Non possédé
-          </span>
-          <button type="button" class="text-xs underline hover:text-slate-700 dark:hover:text-slate-200" @click="changeFreeCommander">
+          <span v-if="!commanderOwned" class="badge badge--neutral">Non possédé</span>
+          <button type="button" class="btn btn--ghost px-2 py-1 text-xs underline" @click="changeFreeCommander">
             Changer
           </button>
         </div>
@@ -494,6 +489,14 @@ function openCardDetail(name: string): void {
                 ({{ budgetToComplete.withoutPrice }} carte{{ budgetToComplete.withoutPrice > 1 ? 's' : '' }} sans prix)
               </span>
             </p>
+            <a
+              :href="`https://edhrec.com/average-decks/${slug}`"
+              target="_blank"
+              rel="noopener"
+              class="mt-1 inline-block text-xs text-slate-400 underline-offset-2 hover:text-slate-600 hover:underline dark:text-slate-500 dark:hover:text-slate-300"
+            >
+              Source : deck moyen sur EDHREC
+            </a>
           </div>
         </div>
 
@@ -528,6 +531,14 @@ function openCardDetail(name: string): void {
           <h2 class="text-lg font-semibold">{{ list.header }}</h2>
           <p v-if="index === 0" class="text-xs text-slate-500 dark:text-slate-400">
             Recommandations par catégorie (catalogue EDHREC) — sans influence sur la complétion ni le budget ci-dessus.
+            <a
+              :href="`https://edhrec.com/commanders/${slug}`"
+              target="_blank"
+              rel="noopener"
+              class="underline-offset-2 hover:text-slate-700 hover:underline dark:hover:text-slate-300"
+            >
+              Source : page commandant sur EDHREC
+            </a>
           </p>
         </div>
         <ul class="grid gap-2 sm:grid-cols-2">
@@ -546,12 +557,7 @@ function openCardDetail(name: string): void {
             <span v-if="!isOwned(card.name)" class="text-right text-xs font-medium text-slate-600 dark:text-slate-300">
               {{ formatEur(priceFor(card.name)) }}
             </span>
-            <span
-              class="rounded-full px-2 py-0.5 text-xs font-medium"
-              :class="isOwned(card.name)
-                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
-                : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'"
-            >
+            <span class="badge" :class="isOwned(card.name) ? 'badge--owned' : 'badge--missing'">
               {{ isOwned(card.name) ? 'Possédée' : 'Manquante' }}
             </span>
           </li>

@@ -136,16 +136,16 @@ function openCardDetail(name: string): void {
     <div class="flex gap-2">
       <button
         type="button"
-        class="rounded-md px-3 py-1.5 text-sm font-medium"
-        :class="mode === 'deck' ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'border border-slate-300 text-slate-600 dark:border-slate-700 dark:text-slate-300'"
+        class="btn"
+        :class="mode === 'deck' ? 'btn--primary' : 'btn--secondary'"
         @click="mode = 'deck'"
       >
         Un de mes decks
       </button>
       <button
         type="button"
-        class="rounded-md px-3 py-1.5 text-sm font-medium"
-        :class="mode === 'paste' ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'border border-slate-300 text-slate-600 dark:border-slate-700 dark:text-slate-300'"
+        class="btn"
+        :class="mode === 'paste' ? 'btn--primary' : 'btn--secondary'"
         @click="mode = 'paste'"
       >
         Coller une decklist
@@ -240,9 +240,7 @@ function openCardDetail(name: string): void {
                 {{ item.subtotal !== null ? formatEur(item.subtotal.toFixed(2)) : '—' }}
               </p>
             </div>
-            <span class="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/40 dark:text-red-300">
-              -{{ item.missingQty }}
-            </span>
+            <span class="badge badge--missing">-{{ item.missingQty }}</span>
           </li>
         </ul>
       </div>

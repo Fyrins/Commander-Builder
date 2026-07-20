@@ -75,7 +75,7 @@ async function submitDeck() {
       <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">
         Glissez-déposez votre export ManaBox ici, ou choisissez un fichier. Remplace intégralement la collection actuelle.
       </p>
-      <label class="cursor-pointer rounded-md border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800">
+      <label class="btn btn--secondary cursor-pointer py-2">
         {{ csvBusy ? 'Import en cours…' : 'Choisir un fichier' }}
         <input type="file" accept=".csv,text/csv" class="hidden" :disabled="csvBusy" @change="onFileInput">
       </label>
@@ -109,7 +109,7 @@ async function submitDeck() {
         <button
           type="button"
           :disabled="deckBusy || !deckName.trim() || !deckText.trim()"
-          class="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+          class="btn btn--primary w-full py-2"
           @click="submitDeck"
         >
           {{ deckBusy ? 'Import en cours…' : 'Ajouter le deck' }}

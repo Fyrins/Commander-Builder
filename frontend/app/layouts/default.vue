@@ -44,7 +44,7 @@ async function handleLogout() {
         <div class="flex items-center gap-3">
           <button
             type="button"
-            class="rounded-md p-2 text-slate-600 hover:bg-slate-200/60 dark:text-slate-300 dark:hover:bg-slate-800"
+            class="btn btn--ghost p-2"
             :aria-label="colorMode.value === 'dark' ? 'Passer en thème clair' : 'Passer en thème sombre'"
             @click="toggleColorMode"
           >
@@ -61,7 +61,7 @@ async function handleLogout() {
           <button
             v-if="user"
             type="button"
-            class="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800"
+            class="btn btn--secondary"
             @click="handleLogout"
           >
             Déconnexion

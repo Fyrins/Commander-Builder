@@ -13,3 +13,186 @@
 html {
   scroll-behavior: smooth;
 }
+
+@layer components {
+  /* ---------------------------------------------------------------------
+   * .mana — disque de symbole de mana (coûts + texte oracle)
+   * Taille relative à la police environnante (em) pour s'adapter au contexte.
+   * ------------------------------------------------------------------- */
+  .mana {
+    @apply relative inline-flex h-[1.5em] w-[1.5em] shrink-0 select-none items-center justify-center rounded-full text-[0.7em] font-bold leading-none;
+    background-color: #c7cdd6;
+    color: #1e293b;
+
+    @variant dark {
+      background-color: #64748b;
+      color: #f8fafc;
+    }
+  }
+
+  .mana__value {
+    @apply relative z-[1];
+  }
+
+  /* SVG officiel Scryfall : remplit le disque ; le fond/texte BEM ci-dessous reste le repli @error. */
+  .mana__image {
+    @apply relative z-[1] block h-full w-full rounded-full;
+  }
+
+  /* Générique {0}-{20} et variable {X}/{Y}/{Z} : disque gris. */
+  .mana--generic {
+    background-color: #c7cdd6;
+    color: #1e293b;
+
+    @variant dark {
+      background-color: #64748b;
+      color: #f8fafc;
+    }
+  }
+
+  /* Couleurs WUBRG : disque de la couleur, texte foncé par-dessus (variables claires). */
+  .mana--w {
+    background-color: var(--mtg-white);
+    color: #4a3f18;
+  }
+  .mana--u {
+    background-color: var(--mtg-blue);
+    color: #14344d;
+  }
+  .mana--b {
+    background-color: var(--mtg-black);
+    color: #201c19;
+  }
+  .mana--r {
+    background-color: var(--mtg-red);
+    color: #4a1d0a;
+  }
+  .mana--g {
+    background-color: var(--mtg-green);
+    color: #1b3016;
+  }
+
+  /* Incolore {C} : gris clair. */
+  .mana--c {
+    background-color: #dde2e8;
+    color: #1e293b;
+
+    @variant dark {
+      background-color: #94a3b8;
+      color: #0f172a;
+    }
+  }
+
+  /* Neige {S} : gris-bleuté. */
+  .mana--s {
+    background-color: #bcd4e6;
+    color: #0f2a3d;
+
+    @variant dark {
+      background-color: #6f9bbd;
+      color: #0b1f2e;
+    }
+  }
+
+  /* Tap {T} : disque gris. */
+  .mana--tap {
+    background-color: #c7cdd6;
+    color: #1e293b;
+
+    @variant dark {
+      background-color: #64748b;
+      color: #f8fafc;
+    }
+  }
+
+  /* Hybride {G/W}, {2/U} : dégradé diagonal des deux couleurs, texte réduit. */
+  .mana--hybrid {
+    background: linear-gradient(135deg, var(--mana-color-a, #9aa3af) 0% 49%, var(--mana-color-b, #9aa3af) 51% 100%);
+    color: #1e293b;
+  }
+  .mana--hybrid .mana__value {
+    @apply text-[0.5em] tracking-tight;
+  }
+
+  /* Phyrexian {B/P} : disque de la couleur (via .mana--w/u/b/r/g), lettre P. */
+  .mana--phyrexian {
+    color: #fff;
+    text-shadow: 0 0 2px rgb(0 0 0 / 60%);
+  }
+
+  /* Symbole non reconnu : repli disque gris avec le texte brut. */
+  .mana--unknown {
+    @apply px-1 text-[0.55em];
+    width: auto;
+    min-width: 1.5em;
+    background-color: #cbd5e1;
+    color: #1e293b;
+
+    @variant dark {
+      background-color: #475569;
+      color: #f1f5f9;
+    }
+  }
+
+  /* ---------------------------------------------------------------------
+   * .btn — bouton d'action réutilisable
+   * ------------------------------------------------------------------- */
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .btn--primary {
+    @apply bg-slate-900 text-white hover:bg-slate-800;
+
+    @variant dark {
+      @apply bg-white text-slate-900 hover:bg-slate-200;
+    }
+  }
+
+  .btn--secondary {
+    @apply border border-slate-300 bg-transparent text-slate-700 hover:bg-slate-100;
+
+    @variant dark {
+      @apply border-slate-700 text-slate-200 hover:bg-slate-800;
+    }
+  }
+
+  .btn--ghost {
+    @apply bg-transparent text-slate-600 hover:bg-slate-200/60 hover:text-slate-900;
+
+    @variant dark {
+      @apply text-slate-300 hover:bg-slate-800 hover:text-white;
+    }
+  }
+
+  /* ---------------------------------------------------------------------
+   * .badge — étiquette de statut réutilisable
+   * ------------------------------------------------------------------- */
+  .badge {
+    @apply inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-medium;
+  }
+
+  .badge--owned {
+    @apply bg-emerald-100 text-emerald-700;
+
+    @variant dark {
+      @apply bg-emerald-900/40 text-emerald-300;
+    }
+  }
+
+  .badge--missing {
+    @apply bg-red-100 text-red-700;
+
+    @variant dark {
+      @apply bg-red-900/40 text-red-300;
+    }
+  }
+
+  .badge--neutral {
+    @apply bg-slate-100 text-slate-600;
+
+    @variant dark {
+      @apply bg-slate-800 text-slate-300;
+    }
+  }
+}
