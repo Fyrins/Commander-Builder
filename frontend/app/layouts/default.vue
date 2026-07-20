@@ -26,7 +26,7 @@ async function handleLogout() {
       <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-3">
         <div class="flex flex-wrap items-center gap-6">
           <NuxtLink to="/" class="text-lg font-semibold tracking-tight">
-            MTG Builder
+            MTG Commander Builder
           </NuxtLink>
           <nav class="flex flex-wrap gap-1">
             <NuxtLink
