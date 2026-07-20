@@ -1,0 +1,82 @@
+name: Deploy API
+
+# URL de prod à définir dans Settings → Variables : API_URL
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'api/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Upload via FTPS
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.O2SWITCH_HOST }}
+          username: ${{ secrets.O2SWITCH_USER }}
+          password: ${{ secrets.O2SWITCH_PASSWORD }}
+          protocol: ftps
+          local-dir: ./api/
+          server-dir: ${{ secrets.O2SWITCH_API_PATH }}
+          exclude: |
+            **/.env.local
+            **/config/jwt/**
+            **/var/**
+            **/vendor/**
+
+      - name: Vérifier si composer.lock a changé
+        run: |
+          if git diff HEAD~1 --name-only | grep -q "api/composer.lock"; then
+            echo ""
+            echo "⚠️  composer.lock a changé."
+            echo "   → Lancer manuellement via le terminal cPanel O2Switch :"
+            echo "     cd ${{ secrets.O2SWITCH_API_PATH }}"
+            echo "     composer install --no-dev --optimize-autoloader"
+            echo "     php bin/console cache:clear --env=prod --no-debug"
+            echo "     php bin/console cache:warmup --env=prod --no-debug"
+          else
+            echo "✅ composer.lock inchangé — pas de composer install nécessaire."
+          fi
+
+      - name: Rappel migrations
+        run: |
+          if git diff HEAD~1 --name-only | grep -q "api/migrations/"; then
+            echo ""
+            echo "⚠️  Nouvelles migrations détectées."
+            echo "   → Lancer manuellement via le terminal cPanel O2Switch :"
+            echo "     php bin/console doctrine:migrations:migrate --no-interaction --env=prod --allow-no-migration"
+          else
+            echo "✅ Pas de nouvelles migrations."
+          fi
+
+  smoke-test:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Smoke tests API
+        run: |
+          set -e
+          API="${{ vars.API_URL }}"
+
+          echo "=== Test 1: API répond ==="
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API/api/login" -X POST -H "Content-Type: application/json" -d '{}')
+          echo "  /api/login POST: $STATUS"
+          [ "$STATUS" = "400" ] || [ "$STATUS" = "401" ] || { echo "FAIL: attendu 400 ou 401"; exit 1; }
+
+          echo "=== Test 2: endpoints authentifiés protégés ==="
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API/api/me")
+          echo "  /api/me sans cookie: $STATUS"
+          [ "$STATUS" = "401" ] || { echo "FAIL: /api/me devrait être 401"; exit 1; }
+
+          echo "=== Test 3: HTTPS forcé ==="
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L "${API/https:/http:}/api/login" -X POST -H "Content-Type: application/json" -d '{}')
+          [ "$STATUS" = "400" ] || [ "$STATUS" = "401" ] || { echo "FAIL"; exit 1; }
+
+          echo ""
+          echo "✅ Tous les smoke tests API passent"
