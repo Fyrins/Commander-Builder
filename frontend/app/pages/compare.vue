@@ -200,6 +200,8 @@ function openCardDetail(name: string): void {
         </div>
       </div>
 
+      <BasicLandsSummary :entries="entries" />
+
       <div v-if="result.unresolvedEntries.length" class="rounded-md bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
         <p class="mb-1 font-medium">Cartes non résolues (nom introuvable) :</p>
         <ul class="list-inside list-disc">

@@ -304,6 +304,11 @@ const averageScore = computed(() => {
 
 const completion = computed(() => averageScore.value?.percent ?? 0)
 
+/** Quantité de terrains de base du deck moyen (auto-possédés, inclus dans ownedCount). */
+const basicsOwnedCount = computed(() =>
+  averageEntries.value.reduce((sum, entry) => (isBasicLandName(entry.name) ? sum + entry.quantity : sum), 0),
+)
+
 interface PriorityItem {
   name: string
   inclusion: number | null
@@ -477,7 +482,7 @@ function openCardDetail(name: string): void {
           <div>
             <p class="font-medium">Complétion du deck moyen</p>
             <p class="text-sm text-slate-500 dark:text-slate-400">
-              {{ averageScore?.ownedCount ?? 0 }} / {{ averageScore?.total ?? 0 }} cartes du vrai deck moyen EDHREC déjà possédées.
+              {{ averageScore?.ownedCount ?? 0 }} / {{ averageScore?.total ?? 0 }} cartes du vrai deck moyen EDHREC déjà possédées<template v-if="basicsOwnedCount > 0">, dont {{ basicsOwnedCount }} terrains de base considérés possédés</template>.
             </p>
             <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
               Budget pour le compléter :
@@ -499,6 +504,8 @@ function openCardDetail(name: string): void {
             </a>
           </div>
         </div>
+
+        <BasicLandsSummary :entries="averageEntries" />
 
         <div v-if="priorityPurchases.length">
           <h2 class="mb-3 text-lg font-semibold">À acheter en priorité</h2>
