@@ -50,7 +50,8 @@ function snKey(set: string, num: string): string {
   return `${set.trim().toLowerCase()}|${num.trim().toLowerCase()}`
 }
 
-function resolveEntry(entry: DecklistEntry, lookup: CardLookup): ResolvedCard | undefined {
+/** Résolution d'une entry de decklist : set+num si disponible, sinon nom. */
+export function resolveEntry(entry: DecklistEntry, lookup: CardLookup): ResolvedCard | undefined {
   if (entry.setCode && entry.collectorNumber) {
     const card = lookup.bySetNum(entry.setCode, entry.collectorNumber)
     if (card) return card

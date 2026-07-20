@@ -106,10 +106,21 @@ class CardController extends AbstractController
      * elle a été mise en cache avant l'introduction des prix (à rattraper une
      * fois), soit Scryfall n'avait pas encore de cote Cardmarket au moment de la
      * résolution (à retenter, sans coût significatif vu le rythme des requêtes).
+     * Même mécanique d'auto-guérison pour producedMana : un terrain (typeLine
+     * contient "Land") mis en cache avant l'introduction de ce champ (donc null)
+     * est aussi traité comme périmé, pour être re-résolu une fois auprès de
+     * Scryfall.
      */
     private function isStale(Card $card): bool
     {
         if ($card->getPriceEur() === null && $card->getPriceEurFoil() === null) {
+            return true;
+        }
+
+        // « Add  » n'apparaît dans un texte oracle que pour la production de mana
+        if ($card->getProducedMana() === null
+            && (str_contains($card->getTypeLine(), 'Land') || str_contains((string) $card->getOracleText(), 'Add '))
+        ) {
             return true;
         }
 
@@ -150,6 +161,10 @@ class CardController extends AbstractController
 
         $card->setCmc((float) ($scryfallCard['cmc'] ?? 0));
         $card->setColorIdentity((array) ($scryfallCard['color_identity'] ?? []));
+
+        $producedMana = $scryfallCard['produced_mana'] ?? null;
+        $card->setProducedMana(is_array($producedMana) ? $producedMana : null);
+
         $card->setSetCode((string) ($scryfallCard['set'] ?? ''));
         $card->setCollectorNumber((string) ($scryfallCard['collector_number'] ?? ''));
         $card->setLang((string) ($scryfallCard['lang'] ?? 'en'));

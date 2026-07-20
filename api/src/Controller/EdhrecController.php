@@ -12,6 +12,57 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class EdhrecController extends AbstractController
 {
+    private const TOP_COMMANDERS_LIMIT = 60;
+
+    #[Route('/api/edhrec/top', name: 'api_edhrec_top', methods: ['GET'], priority: 10)]
+    public function top(HttpClientInterface $httpClient, CacheInterface $cache): JsonResponse
+    {
+        try {
+            $payload = $cache->get('edhrec_top_commanders', function (ItemInterface $item) use ($httpClient) {
+                $item->expiresAfter(24 * 3600);
+
+                $response = $httpClient->request('GET', 'https://json.edhrec.com/pages/commanders/year.json', [
+                    'headers' => ['User-Agent' => 'MTGBuilder/0.1', 'Accept' => 'application/json'],
+                ]);
+
+                if (404 === $response->getStatusCode()) {
+                    $item->expiresAfter(60);
+
+                    return null;
+                }
+
+                $data = $response->toArray();
+
+                $cardviews = [];
+                foreach ($data['container']['json_dict']['cardlists'] ?? [] as $cardlist) {
+                    foreach ($cardlist['cardviews'] ?? [] as $cardview) {
+                        $cardviews[] = $cardview;
+                    }
+                }
+
+                usort($cardviews, static fn (array $a, array $b) => ($a['rank'] ?? PHP_INT_MAX) <=> ($b['rank'] ?? PHP_INT_MAX));
+
+                $commanders = array_map(static function (array $cardview) {
+                    return [
+                        'name' => $cardview['name'] ?? '',
+                        'slug' => $cardview['sanitized'] ?? '',
+                        'numDecks' => (int) ($cardview['num_decks'] ?? 0),
+                    ];
+                }, array_slice($cardviews, 0, self::TOP_COMMANDERS_LIMIT));
+
+                return ['commanders' => $commanders];
+            });
+        } catch (ExceptionInterface) {
+            return new JsonResponse(['error' => 'Top commandants EDHREC introuvable.'], 404);
+        }
+
+        if ($payload === null) {
+            return new JsonResponse(['error' => 'Top commandants EDHREC introuvable.'], 404);
+        }
+
+        return new JsonResponse($payload);
+    }
+
     #[Route('/api/edhrec/average/{slug}', name: 'api_edhrec_average', methods: ['GET'], priority: 10)]
     public function average(string $slug, HttpClientInterface $httpClient, CacheInterface $cache): JsonResponse
     {
