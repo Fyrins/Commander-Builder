@@ -1,0 +1,37 @@
+2 Aether Charge (ONS) 184
+1 Borborygmos (GK2) 87
+1 Bower Passage (AVR) 170
+1 Dragonlord Atarka (TDC) 285
+1 Farseek (TDC) 255
+1 Flameblast Dragon (C18) 123
+1 Flesh // Blood (DGM) 128
+1 Forest (CM2) 312
+3 Forest (PCA) 153
+1 Forest (DDM) 88
+1 Forest (DDL) 81
+1 Forest (DDJ) 88
+2 Forest (DDJ) 87
+2 Forest (FDN) 281
+2 Garruk's Companion (M12) 175
+1 Garruk's Horde (W17) 24
+1 Garruk's Packleader (BLC) 218
+1 Garruk, Caller of Beasts (M14) 172
+1 Kalonian Tusker (M14) 182
+2 Kazandu Refuge (C19) 256
+2 Krosan Drover (SCG) 122
+4 Krosan Warchief (C13) 155
+1 Mighty Emergence (ALA) 137
+1 Mountain (EVG) 62
+4 Mountain (M20) 274
+3 Mountain (M21) 270
+3 Mountain (M21) 269
+2 Overrun (FDN) 230
+2 Rampant Growth (9ED) 263
+1 Ravenous Baloth (GVL) 8
+1 Shivan Dragon (FDN) 206
+4 Shock (M21) 159
+1 Skarrg, the Rage Pits (PCA) 127
+1 Tephraderm (ONS) 239
+1 Terra Stomper (ORI) 288
+1 Thresher Beast (PCY) 128
+1 Untamed Wilds (7ED) 279
