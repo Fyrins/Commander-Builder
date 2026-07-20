@@ -4,7 +4,10 @@
  *  - impression exacte (même set + collectorNumber, toutes langues confondues,
  *    ou scryfallId identique)
  *  - toute édition (via l'oracleId, si `allowOtherEditions` est activé)
- * Les terrains de base sont exclus du calcul.
+ * Les terrains de base sont considérés comme toujours possédés (on suppose
+ * un pool de terrains de base suffisant) : ils comptent leur quantité
+ * demandée à la fois dans le total et dans le nombre possédé, et n'apparaissent
+ * jamais dans `missing` ni dans `unresolvedEntries`.
  */
 import { buildOracleIndex } from './inventory'
 import { isBasicLand, isBasicLandName } from './lands'
@@ -18,7 +21,7 @@ export interface MissingCard {
 }
 
 export interface CompletionResult {
-  totalNonLand: number
+  total: number
   ownedCount: number
   percent: number
   missing: MissingCard[]
@@ -109,8 +112,10 @@ function round1(value: number): number {
 /**
  * Calcule le taux de complétion d'une decklist par rapport à un pool.
  * Résolution d'une entry : set+num → bySetNum, sinon byName.
- * Terrains de base exclus (sur la carte résolue, ou repli sur le nom brut
- * si l'entry n'a pas pu être résolue).
+ * Terrains de base toujours possédés (sur la carte résolue, ou repli sur le
+ * nom brut si l'entry n'a pas pu être résolue) : leur quantité demandée
+ * compte dans le total ET dans le nombre possédé, sans jamais apparaître en
+ * carte manquante ni en entrée non résolue.
  */
 export function scoreDecklist(
   entries: DecklistEntry[],
@@ -120,11 +125,15 @@ export function scoreDecklist(
 ): CompletionResult {
   const relevant: WorkingEntry[] = []
   const unresolvedEntries: DecklistEntry[] = []
+  let landTotal = 0
 
   for (const entry of entries) {
     const card = resolveEntry(entry, lookup)
     const isLand = card ? isBasicLand(card) : isBasicLandName(entry.name)
-    if (isLand) continue
+    if (isLand) {
+      landTotal += entry.quantity
+      continue
+    }
 
     if (!card) {
       unresolvedEntries.push(entry)
@@ -132,9 +141,9 @@ export function scoreDecklist(
     relevant.push({ entry, card })
   }
 
-  const totalNonLand = relevant.reduce((sum, item) => sum + item.entry.quantity, 0)
+  const total = landTotal + relevant.reduce((sum, item) => sum + item.entry.quantity, 0)
 
-  let ownedCount = 0
+  let ownedCount = landTotal
   const missing: MissingCard[] = []
 
   if (opts.allowOtherEditions) {
@@ -182,7 +191,7 @@ export function scoreDecklist(
     return a.name.localeCompare(b.name)
   })
 
-  const percent = totalNonLand === 0 ? 100 : round1((ownedCount / totalNonLand) * 100)
+  const percent = total === 0 ? 100 : round1((ownedCount / total) * 100)
 
-  return { totalNonLand, ownedCount, percent, missing, unresolvedEntries }
+  return { total, ownedCount, percent, missing, unresolvedEntries }
 }

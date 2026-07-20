@@ -2,7 +2,7 @@
 import { buildPool } from '~~/lib/engine/inventory'
 import { parseDecklist } from '~~/lib/engine/parse-decklist'
 import { scoreDecklist } from '~~/lib/engine/scoring'
-import type { DecklistEntry, PoolItem } from '~~/lib/engine/types'
+import type { DecklistEntry, PoolItem, ResolvedCard } from '~~/lib/engine/types'
 
 const store = useCollectionStore()
 
@@ -114,6 +114,14 @@ const estimatedCost = computed(() => {
   }
   return { total, withoutPrice }
 })
+
+// Modal de détail carte : une seule instance par page.
+const selectedCard = ref<ResolvedCard | null>(null)
+
+function openCardDetail(name: string): void {
+  const card = thumbnailFor(name)
+  if (card) selectedCard.value = card
+}
 </script>
 
 <template>
@@ -187,8 +195,8 @@ const estimatedCost = computed(() => {
           </div>
         </div>
         <div>
-          <p class="text-lg font-medium">{{ result.ownedCount }} / {{ result.totalNonLand }} cartes possédées</p>
-          <p class="text-sm text-slate-500 dark:text-slate-400">Terrains de base exclus du calcul.</p>
+          <p class="text-lg font-medium">{{ result.ownedCount }} / {{ result.total }} cartes possédées</p>
+          <p class="text-sm text-slate-500 dark:text-slate-400">Terrains de base considérés comme possédés.</p>
         </div>
       </div>
 
@@ -215,6 +223,11 @@ const estimatedCost = computed(() => {
             v-for="(item, index) in missingWithPrices"
             :key="index"
             class="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-800"
+            :class="{ 'cursor-pointer': thumbnailFor(item.name) }"
+            :role="thumbnailFor(item.name) ? 'button' : undefined"
+            :tabindex="thumbnailFor(item.name) ? 0 : undefined"
+            @click="openCardDetail(item.name)"
+            @keydown.enter="openCardDetail(item.name)"
           >
             <CardHoverImage :small="thumbnailFor(item.name)?.imageSmall" :normal="thumbnailFor(item.name)?.imageNormal" :alt="item.name" />
             <div class="flex-1">
@@ -239,5 +252,7 @@ const estimatedCost = computed(() => {
     <p v-else class="text-sm text-slate-500 dark:text-slate-400">
       Sélectionnez un deck ou collez une decklist pour lancer la comparaison.
     </p>
+
+    <CardDetailModal :card="selectedCard" :open="selectedCard !== null" @close="selectedCard = null" />
   </div>
 </template>

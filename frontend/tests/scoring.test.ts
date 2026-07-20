@@ -68,16 +68,20 @@ const entries: DecklistEntry[] = [
 describe('scoreDecklist — impression exacte (allowOtherEditions: false)', () => {
   const result = scoreDecklist(entries, pool, lookup, { allowOtherEditions: false })
 
-  it('exclut le terrain de base du total (7 non-terrain sur 6 entrées, Forest exclu)', () => {
-    expect(result.totalNonLand).toBe(7)
+  it('compte les 5 Forest (terrain de base, auto-possédé) dans le total avec les 7 non-terrain (12)', () => {
+    expect(result.total).toBe(12)
   })
 
-  it('ne compte que 2 Sol Ring possédés sur la bonne impression (CMD/1), pas les 3 (C21 ignoré)', () => {
-    expect(result.ownedCount).toBe(4)
+  it('compte 4 non-terrain possédés (Sol Ring CMD/1 + Bolt + Atraxa) + les 5 Forest auto-possédés (9)', () => {
+    expect(result.ownedCount).toBe(9)
   })
 
-  it('calcule le pourcentage exact (4/7 = 57.1%)', () => {
-    expect(result.percent).toBe(57.1)
+  it('calcule le pourcentage exact (9/12 = 75%)', () => {
+    expect(result.percent).toBe(75)
+  })
+
+  it('ne remonte jamais le terrain de base en missing', () => {
+    expect(result.missing.some((m) => m.name === 'Forest')).toBe(false)
   })
 
   it('remonte Sol Ring en missing (2 possédés / 3 demandés → manque 1)', () => {
@@ -103,12 +107,12 @@ describe('scoreDecklist — toute édition (allowOtherEditions: true)', () => {
     expect(result.missing.some((m) => m.name === 'Sol Ring')).toBe(false)
   })
 
-  it('possède 5 cartes sur 7 (Sol Ring complet, Bolt, Atraxa ; Fire//Ice et carte inconnue manquants)', () => {
-    expect(result.ownedCount).toBe(5)
+  it('possède 10 cartes sur 12 (Sol Ring complet, Bolt, Atraxa + 5 Forest auto-possédés ; Fire//Ice et carte inconnue manquants)', () => {
+    expect(result.ownedCount).toBe(10)
   })
 
-  it('calcule le pourcentage exact (5/7 = 71.4%)', () => {
-    expect(result.percent).toBe(71.4)
+  it('calcule le pourcentage exact (10/12 = 83.3%)', () => {
+    expect(result.percent).toBe(83.3)
   })
 
   it('ne laisse que 2 cartes manquantes', () => {
@@ -120,8 +124,23 @@ describe('scoreDecklist — toute édition (allowOtherEditions: true)', () => {
 describe('scoreDecklist — cas limite : deck vide', () => {
   it('renvoie 100% quand il n\'y a rien à évaluer', () => {
     const result = scoreDecklist([], [], lookup, { allowOtherEditions: false })
-    expect(result.totalNonLand).toBe(0)
+    expect(result.total).toBe(0)
     expect(result.percent).toBe(100)
     expect(result.missing).toEqual([])
+  })
+})
+
+describe('scoreDecklist — cas limite : deck composé uniquement de terrains de base', () => {
+  it('renvoie 100% (terrains toujours possédés)', () => {
+    const landOnlyEntries: DecklistEntry[] = [
+      { quantity: 17, name: 'Forest', foil: false },
+      { quantity: 17, name: 'Mountain', foil: false },
+    ]
+    const result = scoreDecklist(landOnlyEntries, [], lookup, { allowOtherEditions: false })
+    expect(result.total).toBe(34)
+    expect(result.ownedCount).toBe(34)
+    expect(result.percent).toBe(100)
+    expect(result.missing).toEqual([])
+    expect(result.unresolvedEntries).toEqual([])
   })
 })

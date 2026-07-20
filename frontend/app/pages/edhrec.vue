@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { detectCommanders } from '~~/lib/engine/commanders'
+import { isBasicLand, isBasicLandName } from '~~/lib/engine/lands'
 import { edhrecSlug } from '~~/lib/engine/slugify'
+import type { ResolvedCard } from '~~/lib/engine/types'
 
 interface EdhrecCard {
   name: string
@@ -19,6 +21,18 @@ interface EdhrecResponse {
   cardlists: EdhrecCardlist[]
 }
 
+/** Résultat de recherche Scryfall (sous-ensemble utilisé pour l'autocomplétion de commandant). */
+interface ScryfallSearchCard {
+  name: string
+  type_line: string
+  image_uris?: { small?: string }
+  card_faces?: { image_uris?: { small?: string } }[]
+}
+
+interface ScryfallSearchResponse {
+  data?: ScryfallSearchCard[]
+}
+
 const store = useCollectionStore()
 const route = useRoute()
 
@@ -31,11 +45,18 @@ const prefillSlug = ref<string | null>(typeof route.query.commander === 'string'
 type InputMode = 'pool' | 'free'
 const inputMode = ref<InputMode>('pool')
 const selectedOracleId = ref<string | null>(null)
-const freeName = ref('')
+
+// Recherche de commandant non possédé (autocomplétion Scryfall en direct depuis le navigateur).
+const searchTerm = ref('')
+const searchResults = ref<ScryfallSearchCard[]>([])
+const searchLoading = ref(false)
+const searchError = ref('')
+const selectedFreeCommander = ref<{ name: string } | null>(null)
+let searchDebounce: ReturnType<typeof setTimeout> | undefined
 
 const poolCommanders = computed(() => detectCommanders(store.poolCards.value))
 
-watch([selectedOracleId, freeName, inputMode], () => {
+watch([selectedOracleId, selectedFreeCommander, inputMode], () => {
   prefillSlug.value = null
 })
 
@@ -49,8 +70,71 @@ const slug = computed(() => {
     const card = poolCommanders.value.find((c) => c.oracleId === selectedOracleId.value)
     return card ? edhrecSlug(card.name) : ''
   }
-  return freeName.value.trim() ? edhrecSlug(freeName.value.trim()) : ''
+  return selectedFreeCommander.value ? edhrecSlug(selectedFreeCommander.value.name) : ''
 })
+
+/** Miniature d'un résultat de recherche Scryfall (recto uniquement pour les cartes recto-verso). */
+function searchResultThumbnail(card: ScryfallSearchCard): string | undefined {
+  return card.image_uris?.small ?? card.card_faces?.[0]?.image_uris?.small
+}
+
+async function runCommanderSearch(term: string): Promise<void> {
+  searchLoading.value = true
+  searchError.value = ''
+  try {
+    const url = `https://api.scryfall.com/cards/search?${new URLSearchParams({
+      q: `is:commander ${term}`,
+      unique: 'cards',
+      order: 'edhrec',
+    })}`
+    const response = await fetch(url)
+    if (response.status === 404) {
+      searchResults.value = []
+      searchError.value = 'Aucun commandant trouvé.'
+      return
+    }
+    if (!response.ok) {
+      searchResults.value = []
+      searchError.value = 'Erreur lors de la recherche de commandant.'
+      return
+    }
+    const data = (await response.json()) as ScryfallSearchResponse
+    searchResults.value = (data.data ?? []).slice(0, 8)
+  } catch {
+    searchResults.value = []
+    searchError.value = 'Erreur lors de la recherche de commandant.'
+  } finally {
+    searchLoading.value = false
+  }
+}
+
+watch(searchTerm, (term) => {
+  if (searchDebounce) clearTimeout(searchDebounce)
+  const trimmed = term.trim()
+  if (!trimmed) {
+    searchResults.value = []
+    searchError.value = ''
+    return
+  }
+  searchDebounce = setTimeout(() => {
+    void runCommanderSearch(trimmed)
+  }, 300)
+})
+
+function selectCommanderResult(card: ScryfallSearchCard): void {
+  selectedFreeCommander.value = { name: card.name }
+  searchResults.value = []
+  searchTerm.value = ''
+  searchError.value = ''
+  void store.resolveByNames([card.name])
+}
+
+function changeFreeCommander(): void {
+  selectedFreeCommander.value = null
+  searchTerm.value = ''
+  searchResults.value = []
+  searchError.value = ''
+}
 
 const edhrecData = ref<EdhrecResponse | null>(null)
 const edhrecError = ref('')
@@ -110,9 +194,26 @@ const ownedNameIndex = computed(() => {
   return map
 })
 
+/** Un terrain de base est toujours considéré comme possédé (pool de terrains de base supposé suffisant). */
+function isLandCard(cardName: string): boolean {
+  if (isBasicLandName(cardName)) return true
+  const card = thumbnailFor(cardName)
+  return card ? isBasicLand(card) : false
+}
+
 function isOwned(cardName: string): boolean {
+  if (isLandCard(cardName)) return true
   return ownedNameIndex.value.has(cardName.trim().toLowerCase())
 }
+
+/** Commandant en cours (uniquement pertinent pour la recherche « Rechercher un commandant »). */
+const currentCommanderName = computed(() => {
+  if (prefillSlug.value) return null
+  if (inputMode.value === 'free') return selectedFreeCommander.value?.name ?? null
+  return null
+})
+
+const commanderOwned = computed(() => (currentCommanderName.value ? isOwned(currentCommanderName.value) : true))
 
 const allCardsFlat = computed(() => {
   if (!edhrecData.value) return []
@@ -137,12 +238,23 @@ const completion = computed(() => {
   return Math.round((ownedWeight / totalWeight) * 1000) / 10
 })
 
-const priorityPurchases = computed(() =>
-  allCardsFlat.value
+interface PriorityItem {
+  name: string
+  inclusion: number
+  isCommander?: boolean
+}
+
+const priorityPurchases = computed<PriorityItem[]>(() => {
+  const list: PriorityItem[] = allCardsFlat.value
     .filter((card) => !isOwned(card.name))
     .sort((a, b) => b.inclusion - a.inclusion)
-    .slice(0, 10),
-)
+    .slice(0, 10)
+
+  if (currentCommanderName.value && !commanderOwned.value) {
+    return [{ name: currentCommanderName.value, inclusion: 1, isCommander: true }, ...list]
+  }
+  return list
+})
 
 function thumbnailFor(name: string) {
   return store.lookup.value.byName(name)
@@ -152,7 +264,8 @@ function priceFor(name: string): string | null | undefined {
   return thumbnailFor(name)?.priceEur
 }
 
-/** Budget pour compléter le deck moyen : somme des prix des manquantes uniques (1 exemplaire chacune). */
+/** Budget pour compléter le deck moyen : somme des prix des manquantes uniques (1 exemplaire chacune),
+ *  plus le commandant non possédé le cas échéant (voir `commanderCost`). */
 const budgetToComplete = computed(() => {
   let total = 0
   let withoutPrice = 0
@@ -162,8 +275,28 @@ const budgetToComplete = computed(() => {
     if (price) total += Number(price)
     else withoutPrice += 1
   }
-  return { total, withoutPrice }
+
+  let commanderCost: number | null = null
+  if (currentCommanderName.value && !commanderOwned.value) {
+    const price = priceFor(currentCommanderName.value)
+    if (price) {
+      commanderCost = Number(price)
+      total += commanderCost
+    } else {
+      withoutPrice += 1
+    }
+  }
+
+  return { total, withoutPrice, commanderCost }
 })
+
+// Modal de détail carte (comparateur / EDHREC) : une seule instance par page.
+const selectedCard = ref<ResolvedCard | null>(null)
+
+function openCardDetail(name: string): void {
+  const card = thumbnailFor(name)
+  if (card) selectedCard.value = card
+}
 </script>
 
 <template>
@@ -198,7 +331,7 @@ const budgetToComplete = computed(() => {
           :class="inputMode === 'free' ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'border border-slate-300 text-slate-600 dark:border-slate-700 dark:text-slate-300'"
           @click="inputMode = 'free'"
         >
-          Nom libre
+          Rechercher un commandant
         </button>
       </div>
 
@@ -213,13 +346,56 @@ const budgetToComplete = computed(() => {
         </option>
       </select>
 
-      <input
-        v-else
-        v-model="freeName"
-        type="text"
-        placeholder="Nom du commandant (anglais de préférence)"
-        class="w-full max-w-sm rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-      >
+      <div v-else class="max-w-sm space-y-2">
+        <div v-if="selectedFreeCommander" class="flex flex-wrap items-center gap-2 text-sm">
+          <span>Commandant : <strong>{{ selectedFreeCommander.name }}</strong></span>
+          <span
+            v-if="!commanderOwned"
+            class="rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/40 dark:text-red-300"
+          >
+            Non possédé
+          </span>
+          <button type="button" class="text-xs underline hover:text-slate-700 dark:hover:text-slate-200" @click="changeFreeCommander">
+            Changer
+          </button>
+        </div>
+
+        <div v-else class="relative">
+          <input
+            v-model="searchTerm"
+            type="text"
+            placeholder="Nom du commandant (anglais de préférence)"
+            class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+          >
+
+          <p v-if="searchLoading" class="mt-1 text-xs text-slate-500 dark:text-slate-400">Recherche…</p>
+          <p v-else-if="searchError" class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ searchError }}</p>
+
+          <ul
+            v-if="searchResults.length"
+            class="absolute z-10 mt-1 max-h-72 w-full overflow-y-auto rounded-md border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-800"
+          >
+            <li v-for="card in searchResults" :key="card.name">
+              <button
+                type="button"
+                class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-slate-700"
+                @click="selectCommanderResult(card)"
+              >
+                <img
+                  v-if="searchResultThumbnail(card)"
+                  :src="searchResultThumbnail(card)"
+                  :alt="card.name"
+                  class="h-14 w-auto rounded shadow-sm"
+                >
+                <span class="flex-1">
+                  <span class="block font-medium">{{ card.name }}</span>
+                  <span class="block text-xs text-slate-500 dark:text-slate-400">{{ card.type_line }}</span>
+                </span>
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
     </template>
 
     <p v-if="edhrecLoading" class="text-sm text-slate-500 dark:text-slate-400">Chargement des données EDHREC…</p>
@@ -246,6 +422,9 @@ const budgetToComplete = computed(() => {
             <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
               Budget pour compléter le deck moyen :
               <span class="font-semibold text-slate-900 dark:text-white">{{ formatEur(budgetToComplete.total.toFixed(2)) }}</span>
+              <span v-if="budgetToComplete.commanderCost !== null" class="ml-1 text-xs text-slate-400 dark:text-slate-500">
+                (dont commandant : {{ formatEur(budgetToComplete.commanderCost.toFixed(2)) }})
+              </span>
               <span v-if="budgetToComplete.withoutPrice > 0" class="ml-1 text-xs text-slate-400 dark:text-slate-500">
                 ({{ budgetToComplete.withoutPrice }} carte{{ budgetToComplete.withoutPrice > 1 ? 's' : '' }} sans prix)
               </span>
@@ -260,10 +439,16 @@ const budgetToComplete = computed(() => {
               v-for="card in priorityPurchases"
               :key="card.name"
               class="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-800"
+              :class="{ 'cursor-pointer': thumbnailFor(card.name) }"
+              :role="thumbnailFor(card.name) ? 'button' : undefined"
+              :tabindex="thumbnailFor(card.name) ? 0 : undefined"
+              @click="openCardDetail(card.name)"
+              @keydown.enter="openCardDetail(card.name)"
             >
               <CardHoverImage :small="thumbnailFor(card.name)?.imageSmall" :normal="thumbnailFor(card.name)?.imageNormal" :alt="card.name" />
               <span class="flex-1 font-medium">{{ card.name }}</span>
-              <span class="text-xs text-slate-500 dark:text-slate-400">{{ Math.round(card.inclusion * 1000) / 10 }}% des decks</span>
+              <span v-if="card.isCommander" class="text-xs font-medium text-slate-500 dark:text-slate-400">Commandant</span>
+              <span v-else class="text-xs text-slate-500 dark:text-slate-400">{{ Math.round(card.inclusion * 1000) / 10 }}% des decks</span>
               <span class="text-right text-xs font-medium text-slate-600 dark:text-slate-300">{{ formatEur(priceFor(card.name)) }}</span>
             </li>
           </ul>
@@ -277,6 +462,11 @@ const budgetToComplete = computed(() => {
             v-for="card in list.cards"
             :key="card.name"
             class="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-800"
+            :class="{ 'cursor-pointer': thumbnailFor(card.name) }"
+            :role="thumbnailFor(card.name) ? 'button' : undefined"
+            :tabindex="thumbnailFor(card.name) ? 0 : undefined"
+            @click="openCardDetail(card.name)"
+            @keydown.enter="openCardDetail(card.name)"
           >
             <span class="flex-1 truncate" :title="card.name">{{ card.name }}</span>
             <span class="text-xs text-slate-500 dark:text-slate-400">{{ Math.round(card.inclusion * 1000) / 10 }}%</span>
@@ -295,5 +485,7 @@ const budgetToComplete = computed(() => {
         </ul>
       </section>
     </template>
+
+    <CardDetailModal :card="selectedCard" :open="selectedCard !== null" @close="selectedCard = null" />
   </div>
 </template>
