@@ -11,6 +11,7 @@ export function useAuth() {
   const user = useState<AuthUser | null>('auth:user', () => null)
   const initialized = useState<boolean>('auth:initialized', () => false)
   const pending = useState<boolean>('auth:pending', () => false)
+  const store = useCollectionStore()
 
   async function fetchMe(): Promise<AuthUser | null> {
     pending.value = true
@@ -33,6 +34,8 @@ export function useAuth() {
       credentials: 'include',
       body: { email, password },
     })
+    // L'état de l'utilisateur précédent ne doit jamais survivre au changement de session
+    store.reset()
     await fetchMe()
   }
 
@@ -50,6 +53,7 @@ export function useAuth() {
       await $fetch('/api/logout', { method: 'POST', credentials: 'include' })
     } finally {
       user.value = null
+      store.reset()
     }
   }
 

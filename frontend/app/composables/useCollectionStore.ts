@@ -250,7 +250,21 @@ export function useCollectionStore() {
     rebuildPool()
   }
 
+  /** Vide tout l'état (obligatoire au changement d'utilisateur, sinon données périmées). */
+  function reset() {
+    collectionRows.value = []
+    decks.value = []
+    resolvedCards.value = new Map()
+    lookup.value = createCardLookup([])
+    pool.value = []
+    oracleIndex.value = { index: new Map(), unresolved: [] }
+    progress.value = { done: 0, total: 0 }
+    loading.value = false
+    loaded.value = false
+  }
+
   return {
+    reset,
     collectionRows,
     decks,
     resolvedCards,
