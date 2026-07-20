@@ -1,0 +1,46 @@
+- generic [active] [ref=f1e14]:
+  - generic [ref=f1e36]:
+    - banner [ref=f1e37]:
+      - generic [ref=f1e38]:
+        - generic [ref=f1e39]:
+          - link "MTG Builder" [ref=f1e40] [cursor=pointer]:
+            - /url: /
+          - navigation [ref=f1e41]:
+            - link "Inventaire" [ref=f1e42] [cursor=pointer]:
+              - /url: /
+            - link "Commandants" [ref=f1e43] [cursor=pointer]:
+              - /url: /commanders
+            - link "Comparateur" [ref=f1e44] [cursor=pointer]:
+              - /url: /compare
+            - link "EDHREC" [ref=f1e45] [cursor=pointer]:
+              - /url: /edhrec
+        - generic [ref=f1e46]:
+          - button "Passer en thème sombre" [ref=f1e47]
+          - generic [ref=f1e50]: browsertest@example.com
+          - button "Déconnexion" [ref=f1e51]
+    - main [ref=f1e52]:
+      - generic [ref=f1e54]:
+        - heading "Bienvenue" [level=1] [ref=f1e55]
+        - paragraph [ref=f1e56]: Importez votre collection ManaBox et vos decklists pour commencer.
+        - generic [ref=f1e57]:
+          - generic [ref=f1e58]:
+            - paragraph [ref=f1e59]: Collection (CSV ManaBox)
+            - paragraph [ref=f1e60]: Glissez-déposez votre export ManaBox ici, ou choisissez un fichier. Remplace intégralement la collection actuelle.
+            - generic [ref=f1e61] [cursor=pointer]: Choisir un fichier
+          - generic [ref=f1e62]:
+            - paragraph [ref=f1e63]: Ajouter une decklist
+            - paragraph [ref=f1e64]: Collez une decklist texte (une carte par ligne).
+            - generic [ref=f1e65]:
+              - textbox "Nom du deck" [ref=f1e66]
+              - textbox "1 Sol Ring 1 Atraxa, Praetors' Voice (C16) 1" [ref=f1e67]:
+                - /placeholder: "1 Sol Ring\n1 Atraxa, Praetors' Voice (C16) 1"
+              - generic [ref=f1e68]:
+                - checkbox "Deck que je possède physiquement" [checked] [ref=f1e69]
+                - text: Deck que je possède physiquement
+              - button "Ajouter le deck" [disabled] [ref=f1e70]
+  - generic [ref=f1e1]:
+    - button "Toggle Nuxt DevTools" [ref=f1e2] [cursor=pointer]
+    - generic "Page load time" [ref=f1e33]:
+      - generic [ref=f1e34]: "492"
+      - generic [ref=f1e7]: ms
+    - button "Toggle Component Inspector" [ref=f1e9] [cursor=pointer]

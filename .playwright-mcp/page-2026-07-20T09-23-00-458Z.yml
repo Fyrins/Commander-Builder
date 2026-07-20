@@ -1,0 +1,95 @@
+- generic [active] [ref=f1e14]:
+  - generic [ref=f1e36]:
+    - banner [ref=f1e37]:
+      - generic [ref=f1e38]:
+        - generic [ref=f1e39]:
+          - link "MTG Builder" [ref=f1e40] [cursor=pointer]:
+            - /url: /
+          - navigation [ref=f1e41]:
+            - link "Inventaire" [ref=f1e42] [cursor=pointer]:
+              - /url: /
+            - link "Commandants" [ref=f1e43] [cursor=pointer]:
+              - /url: /commanders
+            - link "Comparateur" [ref=f1e44] [cursor=pointer]:
+              - /url: /compare
+            - link "EDHREC" [ref=f1e45] [cursor=pointer]:
+              - /url: /edhrec
+        - generic [ref=f1e46]:
+          - button "Passer en thème sombre" [ref=f1e47]
+          - generic [ref=f1e50]: browsertest@example.com
+          - button "Déconnexion" [ref=f1e51]
+    - main [ref=f1e52]:
+      - generic [ref=f1e53]:
+        - paragraph [ref=f1e72]: Résolution des cartes… 300/703
+        - generic [ref=f1e76]:
+          - heading "Inventaire" [level=1] [ref=f1e77]
+          - generic [ref=f1e78]:
+            - generic [ref=f1e79]:
+              - paragraph [ref=f1e80]: Total de cartes
+              - paragraph [ref=f1e81]: "0"
+            - generic [ref=f1e82]:
+              - paragraph [ref=f1e83]: Cartes uniques
+              - paragraph [ref=f1e84]: "0"
+          - generic [ref=f1e85]:
+            - paragraph [ref=f1e86]: Répartition par identité de couleur
+            - generic [ref=f1e87]:
+              - generic [ref=f1e88]: Blanc
+              - generic [ref=f1e90]: "0"
+            - generic [ref=f1e91]:
+              - generic [ref=f1e92]: Bleu
+              - generic [ref=f1e94]: "0"
+            - generic [ref=f1e95]:
+              - generic [ref=f1e96]: Noir
+              - generic [ref=f1e98]: "0"
+            - generic [ref=f1e99]:
+              - generic [ref=f1e100]: Rouge
+              - generic [ref=f1e102]: "0"
+            - generic [ref=f1e103]:
+              - generic [ref=f1e104]: Vert
+              - generic [ref=f1e106]: "0"
+            - generic [ref=f1e107]:
+              - generic [ref=f1e108]: Multicolore
+              - generic [ref=f1e110]: "0"
+            - generic [ref=f1e111]:
+              - generic [ref=f1e112]: Incolore
+              - generic [ref=f1e114]: "0"
+        - generic [ref=f1e115]:
+          - heading "Mes decks" [level=2] [ref=f1e116]
+          - paragraph [ref=f1e117]: Aucun deck importé pour l'instant.
+        - generic [ref=f1e118]:
+          - heading "Importer / mettre à jour" [level=2] [ref=f1e119]
+          - generic [ref=f1e120]:
+            - generic [ref=f1e121]:
+              - paragraph [ref=f1e122]: Collection (CSV ManaBox)
+              - paragraph [ref=f1e123]: Glissez-déposez votre export ManaBox ici, ou choisissez un fichier. Remplace intégralement la collection actuelle.
+              - generic [ref=f1e124] [cursor=pointer]: Choisir un fichier
+            - generic [ref=f1e125]:
+              - paragraph [ref=f1e126]: Ajouter une decklist
+              - paragraph [ref=f1e127]: Collez une decklist texte (une carte par ligne).
+              - generic [ref=f1e128]:
+                - textbox "Nom du deck" [ref=f1e129]
+                - textbox "1 Sol Ring 1 Atraxa, Praetors' Voice (C16) 1" [ref=f1e130]:
+                  - /placeholder: "1 Sol Ring\n1 Atraxa, Praetors' Voice (C16) 1"
+                - generic [ref=f1e131]:
+                  - checkbox "Deck que je possède physiquement" [checked] [ref=f1e132]
+                  - text: Deck que je possède physiquement
+                - button "Ajouter le deck" [disabled] [ref=f1e133]
+        - generic [ref=f1e134]:
+          - heading "Collection" [level=2] [ref=f1e135]
+          - searchbox "Rechercher une carte…" [ref=f1e136]
+          - generic [ref=f1e137]:
+            - table [ref=f1e138]:
+              - rowgroup [ref=f1e139]:
+                - row [ref=f1e140]:
+                  - columnheader "Carte" [ref=f1e141]
+                  - columnheader "Set" [ref=f1e142]
+                  - columnheader "Foil" [ref=f1e143]
+                  - columnheader "Qté" [ref=f1e144]
+              - rowgroup
+            - paragraph [ref=f1e145]: Aucune carte ne correspond à la recherche.
+  - generic [ref=f1e1]:
+    - button "Toggle Nuxt DevTools" [ref=f1e2] [cursor=pointer]
+    - generic "Page load time" [ref=f1e33]:
+      - generic [ref=f1e34]: "492"
+      - generic [ref=f1e7]: ms
+    - button "Toggle Component Inspector" [ref=f1e9] [cursor=pointer]

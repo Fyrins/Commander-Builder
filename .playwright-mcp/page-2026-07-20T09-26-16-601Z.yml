@@ -1,0 +1,40 @@
+- generic [ref=f3e1]:
+  - generic [ref=f3e3]:
+    - banner [ref=f3e4]:
+      - generic [ref=f3e5]:
+        - generic [ref=f3e6]:
+          - link "MTG Builder" [ref=f3e7] [cursor=pointer]:
+            - /url: /
+          - navigation [ref=f3e8]:
+            - link "Inventaire" [ref=f3e9] [cursor=pointer]:
+              - /url: /
+            - link "Commandants" [ref=f3e10] [cursor=pointer]:
+              - /url: /commanders
+            - link "Comparateur" [ref=f3e11] [cursor=pointer]:
+              - /url: /compare
+            - link "EDHREC" [ref=f3e12] [cursor=pointer]:
+              - /url: /edhrec
+        - generic [ref=f3e13]:
+          - button "Passer en thème sombre" [ref=f3e14]
+          - generic [ref=f3e17]: browsertest@example.com
+          - button "Déconnexion" [ref=f3e18]
+    - main [ref=f3e19]:
+      - generic [ref=f3e20]:
+        - generic [ref=f3e21]:
+          - heading "Comparateur" [level=1] [ref=f3e22]
+          - paragraph [ref=f3e23]: Vérifiez le taux de complétion d'une decklist par rapport à votre pool (collection + decks inclus).
+        - generic [ref=f3e24]:
+          - button "Un de mes decks" [ref=f3e25]
+          - button "Coller une decklist" [active] [ref=f3e26]
+        - textbox "1 Sol Ring 1 Command Tower 1 Atraxa, Praetors' Voice (C16) 1" [ref=f3e95]:
+          - /placeholder: "1 Sol Ring\n1 Command Tower\n1 Atraxa, Praetors' Voice (C16) 1"
+        - generic [ref=f3e29]:
+          - checkbox "Inclure les autres éditions" [ref=f3e30]
+          - text: Inclure les autres éditions
+        - paragraph [ref=f3e96]: Sélectionnez un deck ou collez une decklist pour lancer la comparaison.
+  - generic [ref=f3e32]:
+    - button "Toggle Nuxt DevTools" [ref=f3e33] [cursor=pointer]
+    - generic "Page load time" [ref=f3e37]:
+      - generic [ref=f3e38]: "17"
+      - generic [ref=f3e39]: ms
+    - button "Toggle Component Inspector" [ref=f3e41] [cursor=pointer]

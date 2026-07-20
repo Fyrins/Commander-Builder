@@ -1,0 +1,4 @@
+- generic [ref=f2e1]:
+  - button "Toggle Nuxt DevTools" [ref=f2e2] [cursor=pointer]
+  - generic "load time" [ref=f2e6]: "-"
+  - button "Toggle Component Inspector" [ref=f2e9] [cursor=pointer]
