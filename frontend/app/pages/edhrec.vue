@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { detectCommanders } from '~~/lib/engine/commanders'
 import { isBasicLand, isBasicLandName } from '~~/lib/engine/lands'
+import { parseDecklist } from '~~/lib/engine/parse-decklist'
+import { scoreDecklist } from '~~/lib/engine/scoring'
 import { edhrecSlug } from '~~/lib/engine/slugify'
-import type { ResolvedCard } from '~~/lib/engine/types'
+import type { DecklistEntry, ResolvedCard } from '~~/lib/engine/types'
 
 interface EdhrecCard {
   name: string
@@ -19,6 +21,12 @@ interface EdhrecCardlist {
 interface EdhrecResponse {
   commander: string
   cardlists: EdhrecCardlist[]
+}
+
+/** Deck moyen réel EDHREC (proxy `/api/edhrec/average/{slug}`) : liste de lignes `"N Nom"`. */
+interface EdhrecAverageResponse {
+  commander: string
+  decklist: string[]
 }
 
 /** Résultat de recherche Scryfall (sous-ensemble utilisé pour l'autocomplétion de commandant). */
@@ -141,21 +149,52 @@ const edhrecError = ref('')
 const edhrecLoading = ref(false)
 const pricesLoading = ref(false)
 
+const averageData = ref<EdhrecAverageResponse | null>(null)
+const averageError = ref('')
+const averageLoading = ref(false)
+const averagePricesLoading = ref(false)
+
+/** Entrées parsées du deck moyen réel (`parseDecklist`), directement exploitables par `scoreDecklist`. */
+const averageEntries = computed<DecklistEntry[]>(() => {
+  if (!averageData.value) return []
+  return parseDecklist(averageData.value.decklist.join('\n')).entries
+})
+
+/** Charge en parallèle les cardlists de la page commandant et le vrai deck moyen EDHREC (deux GET
+ *  distincts, sans écriture, donc sans risque de conflit). Les résolutions de prix qui suivent sont
+ *  en revanche faites en séquence (jamais deux `resolveByNames` en vol en même temps) : l'API
+ *  (`POST /api/cards/resolve`) écrit `resolved_at` en base et deux appels concurrents sur des cartes
+ *  qui se recoupent provoquent des deadlocks MySQL (`SQLSTATE[40001]`). */
 watch(
   slug,
   async (newSlug) => {
     edhrecData.value = null
     edhrecError.value = ''
+    averageData.value = null
+    averageError.value = ''
     if (!newSlug) return
 
     edhrecLoading.value = true
-    try {
-      edhrecData.value = await $fetch<EdhrecResponse>(`/api/edhrec/${newSlug}`, { credentials: 'include' })
-    } catch (error: unknown) {
-      const status = (error as { response?: { status?: number } })?.response?.status
+    averageLoading.value = true
+    const [cardlistsResult, averageResult] = await Promise.allSettled([
+      $fetch<EdhrecResponse>(`/api/edhrec/${newSlug}`, { credentials: 'include' }),
+      $fetch<EdhrecAverageResponse>(`/api/edhrec/average/${newSlug}`, { credentials: 'include' }),
+    ])
+    edhrecLoading.value = false
+    averageLoading.value = false
+
+    if (cardlistsResult.status === 'fulfilled') {
+      edhrecData.value = cardlistsResult.value
+    } else {
+      const status = (cardlistsResult.reason as { response?: { status?: number } })?.response?.status
       edhrecError.value = status === 404 ? 'Commandant introuvable sur EDHREC.' : 'Erreur lors de la récupération des données EDHREC.'
-    } finally {
-      edhrecLoading.value = false
+    }
+
+    if (averageResult.status === 'fulfilled') {
+      averageData.value = averageResult.value
+    } else {
+      const status = (averageResult.reason as { response?: { status?: number } })?.response?.status
+      averageError.value = status === 404 ? 'Deck moyen introuvable sur EDHREC.' : 'Erreur lors de la récupération du deck moyen EDHREC.'
     }
 
     if (edhrecData.value) {
@@ -166,6 +205,18 @@ watch(
           await store.resolveByNames(names)
         } finally {
           pricesLoading.value = false
+        }
+      }
+    }
+
+    if (averageData.value) {
+      const names = Array.from(new Set(averageEntries.value.map((entry) => entry.name)))
+      if (names.length > 0) {
+        averagePricesLoading.value = true
+        try {
+          await store.resolveByNames(names)
+        } finally {
+          averagePricesLoading.value = false
         }
       }
     }
@@ -215,46 +266,26 @@ const currentCommanderName = computed(() => {
 
 const commanderOwned = computed(() => (currentCommanderName.value ? isOwned(currentCommanderName.value) : true))
 
-const allCardsFlat = computed(() => {
-  if (!edhrecData.value) return []
-  const map = new Map<string, { name: string; inclusion: number }>()
+/** Taux d'inclusion (max toutes catégories confondues) par nom de carte, tel qu'affiché sur la page
+ *  commandant EDHREC. Sert uniquement à annoter la liste de priorités d'achat — sans influence sur
+ *  la complétion ni le budget, qui sont désormais calculés sur le vrai deck moyen. */
+const inclusionByName = computed(() => {
+  const map = new Map<string, number>()
+  if (!edhrecData.value) return map
   for (const list of edhrecData.value.cardlists) {
     for (const card of list.cards) {
       const key = card.name.toLowerCase()
       const existing = map.get(key)
-      if (!existing || card.inclusion > existing.inclusion) {
-        map.set(key, { name: card.name, inclusion: card.inclusion })
+      if (existing === undefined || card.inclusion > existing) {
+        map.set(key, card.inclusion)
       }
     }
   }
-  return Array.from(map.values())
+  return map
 })
 
-const completion = computed(() => {
-  const cards = allCardsFlat.value
-  const totalWeight = cards.reduce((sum, card) => sum + card.inclusion, 0)
-  if (totalWeight === 0) return 0
-  const ownedWeight = cards.reduce((sum, card) => sum + (isOwned(card.name) ? card.inclusion : 0), 0)
-  return Math.round((ownedWeight / totalWeight) * 1000) / 10
-})
-
-interface PriorityItem {
-  name: string
-  inclusion: number
-  isCommander?: boolean
-}
-
-const priorityPurchases = computed<PriorityItem[]>(() => {
-  const list: PriorityItem[] = allCardsFlat.value
-    .filter((card) => !isOwned(card.name))
-    .sort((a, b) => b.inclusion - a.inclusion)
-    .slice(0, 10)
-
-  if (currentCommanderName.value && !commanderOwned.value) {
-    return [{ name: currentCommanderName.value, inclusion: 1, isCommander: true }, ...list]
-  }
-  return list
-})
+/** Nom du commandant tel qu'il apparaît dans le deck moyen (toujours la première ligne côté EDHREC). */
+const averageCommanderName = computed(() => averageEntries.value[0]?.name ?? null)
 
 function thumbnailFor(name: string) {
   return store.lookup.value.byName(name)
@@ -264,24 +295,56 @@ function priceFor(name: string): string | null | undefined {
   return thumbnailFor(name)?.priceEur
 }
 
-/** Budget pour compléter le deck moyen : somme des prix des manquantes uniques (1 exemplaire chacune),
- *  plus le commandant non possédé le cas échéant (voir `commanderCost`). */
+/** Score de complétion du deck moyen réel par rapport au pool (collection + decks inclus), tous
+ *  éditions confondues. Les terrains de base sont gérés par le moteur (toujours possédés). */
+const averageScore = computed(() => {
+  if (averageEntries.value.length === 0) return null
+  return scoreDecklist(averageEntries.value, store.pool.value, store.lookup.value, { allowOtherEditions: true })
+})
+
+const completion = computed(() => averageScore.value?.percent ?? 0)
+
+interface PriorityItem {
+  name: string
+  inclusion: number | null
+  isCommander: boolean
+}
+
+/** Manquantes du deck moyen, triées par taux d'inclusion EDHREC décroissant (croisé avec les
+ *  cardlists déjà chargées ; sans correspondance → affichée sans %). */
+const priorityPurchases = computed<PriorityItem[]>(() => {
+  const missing = averageScore.value?.missing ?? []
+  return missing
+    .filter((card) => card.needed - card.owned > 0)
+    .map((card) => ({
+      name: card.name,
+      inclusion: inclusionByName.value.get(card.name.toLowerCase()) ?? null,
+      isCommander: averageCommanderName.value !== null && card.name.toLowerCase() === averageCommanderName.value.toLowerCase(),
+    }))
+    .sort((a, b) => (b.inclusion ?? -1) - (a.inclusion ?? -1))
+    .slice(0, 10)
+})
+
+/** Budget pour compléter le deck moyen : somme des prix × quantité manquante (needed - owned) des
+ *  cartes absentes du deck moyen réel, plus la mention du coût du commandant s'il figure lui-même
+ *  parmi les manquantes (il est naturellement dans le deck moyen : `1 <commandant>`). */
 const budgetToComplete = computed(() => {
   let total = 0
   let withoutPrice = 0
-  for (const card of allCardsFlat.value) {
-    if (isOwned(card.name)) continue
-    const price = priceFor(card.name)
-    if (price) total += Number(price)
-    else withoutPrice += 1
-  }
-
   let commanderCost: number | null = null
-  if (currentCommanderName.value && !commanderOwned.value) {
-    const price = priceFor(currentCommanderName.value)
+
+  const missing = averageScore.value?.missing ?? []
+  for (const card of missing) {
+    const qty = card.needed - card.owned
+    if (qty <= 0) continue
+
+    const price = priceFor(card.name)
     if (price) {
-      commanderCost = Number(price)
-      total += commanderCost
+      const cost = Number(price) * qty
+      total += cost
+      if (averageCommanderName.value !== null && card.name.toLowerCase() === averageCommanderName.value.toLowerCase()) {
+        commanderCost = cost
+      }
     } else {
       withoutPrice += 1
     }
@@ -400,9 +463,11 @@ function openCardDetail(name: string): void {
 
     <p v-if="edhrecLoading" class="text-sm text-slate-500 dark:text-slate-400">Chargement des données EDHREC…</p>
     <p v-if="edhrecError" class="text-sm text-red-600 dark:text-red-400">{{ edhrecError }}</p>
+    <p v-if="averageLoading" class="text-sm text-slate-500 dark:text-slate-400">Chargement du deck moyen…</p>
+    <p v-if="averageError" class="text-sm text-red-600 dark:text-red-400">{{ averageError }}</p>
 
-    <template v-if="edhrecData">
-      <p v-if="pricesLoading" class="text-sm text-slate-500 dark:text-slate-400">Récupération des prix…</p>
+    <template v-if="averageData">
+      <p v-if="averagePricesLoading || pricesLoading" class="text-sm text-slate-500 dark:text-slate-400">Récupération des prix…</p>
 
       <section class="space-y-4 rounded-xl border border-slate-200 p-6 dark:border-slate-800">
         <div class="flex flex-wrap items-center gap-6">
@@ -415,12 +480,12 @@ function openCardDetail(name: string): void {
             </div>
           </div>
           <div>
-            <p class="font-medium">Complétion estimée du deck moyen</p>
+            <p class="font-medium">Complétion du deck moyen</p>
             <p class="text-sm text-slate-500 dark:text-slate-400">
-              Pondérée par le taux d'inclusion de chaque carte sur EDHREC.
+              {{ averageScore?.ownedCount ?? 0 }} / {{ averageScore?.total ?? 0 }} cartes du vrai deck moyen EDHREC déjà possédées.
             </p>
             <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
-              Budget pour compléter le deck moyen :
+              Budget pour le compléter :
               <span class="font-semibold text-slate-900 dark:text-white">{{ formatEur(budgetToComplete.total.toFixed(2)) }}</span>
               <span v-if="budgetToComplete.commanderCost !== null" class="ml-1 text-xs text-slate-400 dark:text-slate-500">
                 (dont commandant : {{ formatEur(budgetToComplete.commanderCost.toFixed(2)) }})
@@ -448,15 +513,23 @@ function openCardDetail(name: string): void {
               <CardHoverImage :small="thumbnailFor(card.name)?.imageSmall" :normal="thumbnailFor(card.name)?.imageNormal" :alt="card.name" />
               <span class="flex-1 font-medium">{{ card.name }}</span>
               <span v-if="card.isCommander" class="text-xs font-medium text-slate-500 dark:text-slate-400">Commandant</span>
-              <span v-else class="text-xs text-slate-500 dark:text-slate-400">{{ Math.round(card.inclusion * 1000) / 10 }}% des decks</span>
+              <span v-else-if="card.inclusion !== null" class="text-xs text-slate-500 dark:text-slate-400">{{ Math.round(card.inclusion * 1000) / 10 }}% des decks</span>
+              <span v-else class="text-xs text-slate-400 dark:text-slate-500">—</span>
               <span class="text-right text-xs font-medium text-slate-600 dark:text-slate-300">{{ formatEur(priceFor(card.name)) }}</span>
             </li>
           </ul>
         </div>
       </section>
+    </template>
 
-      <section v-for="list in edhrecData.cardlists" :key="list.header" class="space-y-3">
-        <h2 class="text-lg font-semibold">{{ list.header }}</h2>
+    <template v-if="edhrecData">
+      <section v-for="(list, index) in edhrecData.cardlists" :key="list.header" class="space-y-3">
+        <div>
+          <h2 class="text-lg font-semibold">{{ list.header }}</h2>
+          <p v-if="index === 0" class="text-xs text-slate-500 dark:text-slate-400">
+            Recommandations par catégorie (catalogue EDHREC) — sans influence sur la complétion ni le budget ci-dessus.
+          </p>
+        </div>
         <ul class="grid gap-2 sm:grid-cols-2">
           <li
             v-for="card in list.cards"
