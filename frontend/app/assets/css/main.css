@@ -1,0 +1,15 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --mtg-white: #f8f6d8;
+  --mtg-blue: #c1d7e9;
+  --mtg-black: #bab1ab;
+  --mtg-red: #e49977;
+  --mtg-green: #a3c095;
+}
+
+html {
+  scroll-behavior: smooth;
+}
