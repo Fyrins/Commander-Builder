@@ -13,7 +13,7 @@ Application web multi-utilisateurs : importer sa collection Magic (export ManaBo
 - **Moteur pur** dans `frontend/lib/engine/` : parsing CSV/decklist, terrains de base, fusion inventaire, scoring, commandants, slug EDHREC. Zéro dépendance Nuxt/réseau, tout est testé par Vitest (`npm run test` dans frontend/).
 - **Matching des cartes** : clé primaire `oracle_id` Scryfall (insensible à la langue FR/EN), repli `set + collector_number`. Jamais de fuzzy matching sur les noms.
 - **Catalogue** : aucune donnée carte embarquée. Résolution via Scryfall `POST /cards/collection` (batch 75, throttle 100 ms), cache partagé dans la table `cards`. Le client découpe ses requêtes `POST /api/cards/resolve` en paquets ≤ 300 identifiants.
-- **Terrains de base exclus** du scoring (EN/FR/enneigés, via `type_line` ou repli nom).
+- **Terrains de base toujours considérés comme possédés** (hypothèse : tout joueur a un pool de terrains suffisant). Ils comptent dans le % de complétion (numérateur et dénominateur) mais n'apparaissent jamais dans les manquantes ni les budgets d'achat. Détection EN/FR/enneigés via `type_line` ou repli nom.
 - **Images** : jamais stockées — hotlink des `image_uris` Scryfall (small/normal), lazy-loading.
 - **EDHREC** : pas d'API officielle — `https://json.edhrec.com/pages/commanders/<slug>.json` proxifié par `GET /api/edhrec/{slug}` (pas de CORS chez EDHREC).
 
