@@ -52,6 +52,9 @@ class Card
     #[ORM\Column(length: 8)]
     private string $lang;
 
+    #[ORM\Column(type: 'json', nullable: true)]
+    private ?array $producedMana = null;
+
     #[ORM\Column(nullable: true)]
     private ?string $imageSmall = null;
 
@@ -222,6 +225,18 @@ class Card
         return $this;
     }
 
+    public function getProducedMana(): ?array
+    {
+        return $this->producedMana;
+    }
+
+    public function setProducedMana(?array $producedMana): static
+    {
+        $this->producedMana = $producedMana;
+
+        return $this;
+    }
+
     public function getImageSmall(): ?string
     {
         return $this->imageSmall;
@@ -318,6 +333,7 @@ class Card
             'manaCost' => $this->manaCost,
             'cmc' => $this->cmc,
             'colorIdentity' => $this->colorIdentity,
+            'producedMana' => $this->producedMana,
             'setCode' => $this->setCode,
             'collectorNumber' => $this->collectorNumber,
             'lang' => $this->lang,

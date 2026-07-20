@@ -46,6 +46,7 @@ export interface ResolvedCard {
   lang: string
   priceEur?: string | null
   priceEurFoil?: string | null
+  producedMana?: string[] | null
 }
 
 /** Index de résolution de cartes, par identifiant Scryfall, impression ou nom EN. */
