@@ -6,6 +6,13 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   ssr: false,
 
+  app: {
+    head: {
+      title: 'MTG Commander Builder',
+      htmlAttrs: { lang: 'fr' },
+    },
+  },
+
   modules: ['@nuxtjs/color-mode', '@vite-pwa/nuxt'],
 
   css: ['~/assets/css/main.css'],
@@ -37,8 +44,8 @@ export default defineNuxtConfig({
   pwa: {
     registerType: 'autoUpdate',
     manifest: {
-      name: 'MTG Deck Builder Companion',
-      short_name: 'MTG Builder',
+      name: 'MTG Commander Builder',
+      short_name: 'MTG Commander Builder',
       description:
         'Importez votre collection Magic, découvrez vos commandants jouables et complétez vos decks Commander.',
       theme_color: '#0f172a',

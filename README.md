@@ -1,4 +1,4 @@
-# MTG Deck Builder Companion
+# MTG Commander Builder
 
 Importez votre collection Magic: The Gathering (export ManaBox), découvrez quels commandants vous pouvez jouer, et mesurez à quel point votre collection couvre n'importe quelle decklist Commander — avec les cartes manquantes triées et le « deck moyen » EDHREC comme liste d'achat priorisée.
 

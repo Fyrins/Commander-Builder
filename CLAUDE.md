@@ -1,4 +1,4 @@
-# MTG Builder — Deck Builder Companion
+# MTG Commander Builder
 
 Application web multi-utilisateurs : importer sa collection Magic (export ManaBox CSV) et ses decklists, détecter les commandants jouables, mesurer la complétion de n'importe quelle decklist (comparateur + deck moyen EDHREC = liste d'achat priorisée).
 
