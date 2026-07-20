@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ApiDeck } from '~/composables/useCollectionStore'
-import type { CollectionRow } from '~~/lib/engine/types'
+import type { CollectionRow, PoolItem } from '~~/lib/engine/types'
 
 const store = useCollectionStore()
 
@@ -16,13 +16,22 @@ const filteredRows = computed(() => {
   return store.collectionRows.value.filter((row) => row.name.toLowerCase().includes(query))
 })
 
+function cardOfPoolItem(item: PoolItem) {
+  const lookup = store.lookup.value
+  if (item.scryfallId) return lookup.byScryfallId(item.scryfallId)
+  if (item.setCode && item.collectorNumber) return lookup.bySetNum(item.setCode, item.collectorNumber)
+  if (item.name) return lookup.byName(item.name)
+  return undefined
+}
+
+// Les stats portent sur le pool fusionné (collection + decks cochés), pas la collection seule
 const stats = computed(() => {
-  const rows = store.collectionRows.value
-  const total = rows.reduce((sum, row) => sum + row.quantity, 0)
+  const items = store.pool.value
+  const total = items.reduce((sum, item) => sum + item.quantity, 0)
   const oracleIds = new Set<string>()
-  for (const row of rows) {
-    const card = store.lookup.value.byScryfallId(row.scryfallId)
-    oracleIds.add(card?.oracleId ?? `name:${row.name.toLowerCase()}`)
+  for (const item of items) {
+    const card = cardOfPoolItem(item)
+    oracleIds.add(card?.oracleId ?? `name:${(item.name ?? item.scryfallId ?? '').toLowerCase()}`)
   }
   return { total, unique: oracleIds.size }
 })
@@ -39,12 +48,12 @@ const COLOR_VARS: Record<string, string> = {
 
 const colorBreakdown = computed(() => {
   const buckets: Record<string, number> = { W: 0, U: 0, B: 0, R: 0, G: 0, multi: 0, colorless: 0 }
-  for (const row of store.collectionRows.value) {
-    const card = store.lookup.value.byScryfallId(row.scryfallId)
+  for (const item of store.pool.value) {
+    const card = cardOfPoolItem(item)
     const identity = card?.colorIdentity ?? []
-    if (identity.length === 0) buckets.colorless += row.quantity
-    else if (identity.length === 1 && identity[0] in buckets) buckets[identity[0]] += row.quantity
-    else buckets.multi += row.quantity
+    if (identity.length === 0) buckets.colorless += item.quantity
+    else if (identity.length === 1 && identity[0]! in buckets) buckets[identity[0]!] += item.quantity
+    else buckets.multi += item.quantity
   }
   return buckets
 })
@@ -89,7 +98,7 @@ async function handleDelete(deck: ApiDeck) {
         <h1 class="mb-4 text-2xl font-semibold">Inventaire</h1>
         <div class="grid gap-4 sm:grid-cols-2">
           <div class="rounded-xl border border-slate-200 p-4 dark:border-slate-800">
-            <p class="text-sm text-slate-500 dark:text-slate-400">Total de cartes</p>
+            <p class="text-sm text-slate-500 dark:text-slate-400">Total de cartes (collection + decks inclus)</p>
             <p class="text-2xl font-semibold">{{ stats.total }}</p>
           </div>
           <div class="rounded-xl border border-slate-200 p-4 dark:border-slate-800">
