@@ -1,0 +1,84 @@
+name: Deploy Frontend
+
+# URLs de prod à définir dans Settings → Variables : FRONTEND_URL, API_URL
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: cd frontend && npm ci
+
+      - name: Run unit tests
+        run: cd frontend && npm run test
+
+      - name: Build
+        run: cd frontend && npx nuxt generate
+        env:
+          NUXT_PUBLIC_API_BASE: ${{ vars.API_URL }}/api
+
+      - name: Upload via FTPS
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.O2SWITCH_HOST }}
+          username: ${{ secrets.O2SWITCH_USER }}
+          password: ${{ secrets.O2SWITCH_PASSWORD }}
+          protocol: ftps
+          local-dir: ./frontend/.output/public/
+          server-dir: ${{ secrets.O2SWITCH_FRONTEND_PATH }}
+
+  smoke-test:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Attendre propagation
+        run: sleep 30
+
+      - name: Smoke tests frontend
+        run: |
+          set -e
+          URL="${{ vars.FRONTEND_URL }}"
+
+          echo "=== Test 1: page d'accueil accessible (retry O2Switch restart) ==="
+          STATUS=""
+          for attempt in 1 2 3 4 5 6 7 8; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL/")
+            echo "  Tentative $attempt — Status: $STATUS"
+            [ "$STATUS" = "200" ] && break
+            sleep 15
+          done
+          [ "$STATUS" = "200" ] || { echo "FAIL: homepage non-200 après 8 tentatives"; exit 1; }
+
+          echo "=== Test 2: HTTPS forcé ==="
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L "${URL/https:/http:}/")
+          [ "$STATUS" = "200" ] || { echo "FAIL"; exit 1; }
+
+          echo "=== Test 3: manifest PWA accessible ==="
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL/manifest.webmanifest")
+          echo "  manifest.webmanifest: $STATUS"
+          [ "$STATUS" = "200" ] || { echo "FAIL: manifest PWA absent"; exit 1; }
+
+          echo "=== Test 4: assets _nuxt/ accessibles ==="
+          ASSET=$(curl -s "$URL/" | grep -oE '/_nuxt/[A-Za-z0-9_.-]+\.js' | head -1)
+          if [ -n "$ASSET" ]; then
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL$ASSET")
+            echo "  Asset $ASSET : $STATUS"
+            [ "$STATUS" = "200" ] || { echo "FAIL"; exit 1; }
+          fi
+
+          echo ""
+          echo "✅ Tous les smoke tests passent"
