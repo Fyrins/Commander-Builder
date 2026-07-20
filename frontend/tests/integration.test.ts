@@ -120,19 +120,26 @@ describe.skipIf(!process.env.INTEGRATION)('intégration bout-en-bout', () => {
     })
 
     console.log(
-      `Ancient Arsenal : ${result.percent} % (${result.ownedCount}/${result.totalNonLand}), ` +
+      `Ancient Arsenal : ${result.percent} % (${result.ownedCount}/${result.total}), ` +
         `manquantes : ${result.missing.length}, non résolues : ${result.unresolvedEntries.length}`,
     )
     expect(result.unresolvedEntries).toHaveLength(0)
-    expect(result.percent).toBeGreaterThanOrEqual(99)
+    // Ancient Arsenal : 20 entrées / 60 cartes dont 11 Mountain + 11 Plains
+    // (terrains de base, toujours possédés) → total 60, owned 60, percent 100.
+    expect(result.total).toBe(60)
+    expect(result.ownedCount).toBe(60)
+    expect(result.percent).toBe(100)
 
-    // 5. Cache : un second resolve du premier chunk ne doit plus appeler Scryfall
+    // 5. Cache : un second resolve du premier chunk est servi par le cache,
+    // à l'exception des cartes sans aucun prix EUR (traitées comme périmées
+    // par conception pour retenter la récupération du prix Cardmarket).
     const second = await api('/api/cards/resolve', {
       method: 'POST',
       body: { identifiers: identifiers.slice(0, CHUNK_SIZE) },
       cookie,
     })
     expect(second.status).toBe(200)
-    expect(second.json.debug.from_scryfall).toBe(0)
+    expect(second.json.debug.from_scryfall).toBeLessThanOrEqual(5)
+    expect(second.json.debug.from_cache).toBeGreaterThanOrEqual(CHUNK_SIZE - 5)
   }, 240_000)
 })
