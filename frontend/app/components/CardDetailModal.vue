@@ -63,7 +63,7 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown))
           </div>
           <button
             type="button"
-            class="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+            class="btn btn--ghost rounded-lg p-1.5"
             aria-label="Fermer"
             @click="emit('close')"
           >
@@ -85,18 +85,10 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown))
           <div class="space-y-4 text-sm">
             <div class="flex flex-wrap items-center gap-2">
               <span class="font-medium">{{ card.typeLine }}</span>
-              <span
-                v-if="card.manaCost"
-                class="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-800 dark:bg-slate-800 dark:text-slate-100"
-              >
-                {{ card.manaCost }}
-              </span>
-              <ColorPips :colors="card.colorIdentity" />
+              <ManaCost :cost="card.manaCost" class="text-base" />
             </div>
 
-            <p v-if="card.oracleText" class="whitespace-pre-line text-slate-700 dark:text-slate-200">
-              {{ card.oracleText }}
-            </p>
+            <OracleText :text="card.oracleText" class="text-slate-700 dark:text-slate-200" />
 
             <dl class="grid grid-cols-2 gap-x-4 gap-y-1 text-slate-600 dark:text-slate-400">
               <dt>Édition</dt>
@@ -116,7 +108,7 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown))
                 :href="cardmarketUrl"
                 target="_blank"
                 rel="noopener"
-                class="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-300"
+                class="btn btn--primary text-xs"
               >
                 Acheter sur Cardmarket
               </a>
@@ -124,7 +116,7 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown))
                 :href="scryfallUrl"
                 target="_blank"
                 rel="noopener"
-                class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium hover:bg-slate-100 dark:border-slate-600 dark:hover:bg-slate-800"
+                class="btn btn--secondary text-xs"
               >
                 Voir sur Scryfall
               </a>

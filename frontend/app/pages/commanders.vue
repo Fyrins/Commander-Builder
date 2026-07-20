@@ -65,7 +65,7 @@ const filteredCommanders = computed(() => {
       <button
         v-if="selectedColors.size"
         type="button"
-        class="text-xs text-slate-500 underline hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+        class="btn btn--ghost px-2 py-1 text-xs underline"
         @click="resetColors"
       >
         Réinitialiser

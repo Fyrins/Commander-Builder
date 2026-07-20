@@ -59,7 +59,7 @@ async function handleSubmit() {
         <button
           type="submit"
           :disabled="pending"
-          class="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+          class="btn btn--primary w-full py-2"
         >
           {{ pending ? 'Connexion…' : 'Se connecter' }}
         </button>

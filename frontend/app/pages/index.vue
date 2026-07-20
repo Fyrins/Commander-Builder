@@ -172,7 +172,7 @@ async function handleDelete(deck: ApiDeck) {
               </label>
               <button
                 type="button"
-                class="rounded-md border border-red-300 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/40"
+                class="btn btn--secondary border-red-300 px-2 py-1 text-xs text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/40"
                 @click="handleDelete(deck)"
               >
                 Supprimer
@@ -220,12 +220,7 @@ async function handleDelete(deck: ApiDeck) {
                 </td>
                 <td class="px-3 py-2 uppercase text-slate-500 dark:text-slate-400">{{ row.setCode }}</td>
                 <td class="px-3 py-2">
-                  <span
-                    v-if="row.foil"
-                    class="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
-                  >
-                    Foil
-                  </span>
+                  <span v-if="row.foil" class="badge badge--neutral">Foil</span>
                 </td>
                 <td class="px-3 py-2 text-right">{{ row.quantity }}</td>
               </tr>
