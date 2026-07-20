@@ -52,7 +52,7 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown))
       @click.self="emit('close')"
     >
       <div
-        class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-900"
+        class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 text-slate-900 shadow-2xl dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
       >
         <div class="mb-4 flex items-start justify-between gap-4">
           <div>
@@ -85,13 +85,16 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown))
           <div class="space-y-4 text-sm">
             <div class="flex flex-wrap items-center gap-2">
               <span class="font-medium">{{ card.typeLine }}</span>
-              <span v-if="card.manaCost" class="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs dark:bg-slate-800">
+              <span
+                v-if="card.manaCost"
+                class="rounded bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-800 dark:bg-slate-800 dark:text-slate-100"
+              >
                 {{ card.manaCost }}
               </span>
               <ColorPips :colors="card.colorIdentity" />
             </div>
 
-            <p v-if="card.oracleText" class="whitespace-pre-line text-slate-700 dark:text-slate-300">
+            <p v-if="card.oracleText" class="whitespace-pre-line text-slate-700 dark:text-slate-200">
               {{ card.oracleText }}
             </p>
 
