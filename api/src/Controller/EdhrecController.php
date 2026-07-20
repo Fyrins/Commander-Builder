@@ -12,6 +12,38 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class EdhrecController extends AbstractController
 {
+    #[Route('/api/edhrec/average/{slug}', name: 'api_edhrec_average', methods: ['GET'], priority: 10)]
+    public function average(string $slug, HttpClientInterface $httpClient, CacheInterface $cache): JsonResponse
+    {
+        try {
+            $payload = $cache->get('edhrec_average_deck_' . $slug, function (ItemInterface $item) use ($slug, $httpClient) {
+                $item->expiresAfter(6 * 3600);
+
+                $response = $httpClient->request('GET', sprintf('https://json.edhrec.com/pages/average-decks/%s.json', $slug), [
+                    'headers' => ['User-Agent' => 'MTGBuilder/0.1', 'Accept' => 'application/json'],
+                ]);
+
+                if (404 === $response->getStatusCode()) {
+                    $item->expiresAfter(60);
+
+                    return null;
+                }
+
+                $data = $response->toArray();
+
+                return ['commander' => $slug, 'decklist' => $data['deck'] ?? []];
+            });
+        } catch (ExceptionInterface) {
+            return new JsonResponse(['error' => 'Deck moyen EDHREC introuvable.'], 404);
+        }
+
+        if ($payload === null) {
+            return new JsonResponse(['error' => 'Deck moyen EDHREC introuvable.'], 404);
+        }
+
+        return new JsonResponse($payload);
+    }
+
     #[Route('/api/edhrec/{slug}', name: 'api_edhrec', methods: ['GET'])]
     public function __invoke(string $slug, HttpClientInterface $httpClient, CacheInterface $cache): JsonResponse
     {
