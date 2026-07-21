@@ -83,7 +83,7 @@ const filteredCommanders = computed(() => {
       <NuxtLink
         v-for="card in filteredCommanders"
         :key="card.oracleId"
-        :to="{ path: '/edhrec', query: { commander: edhrecSlug(card.name) } }"
+        :to="{ path: '/decks', query: { commander: edhrecSlug(card.name) } }"
         class="group rounded-xl border border-slate-200 p-2 transition hover:border-slate-400 dark:border-slate-800 dark:hover:border-slate-600"
       >
         <img v-if="card.imageNormal" :src="card.imageNormal" :alt="card.name" loading="lazy" class="mb-2 w-full rounded-lg">
