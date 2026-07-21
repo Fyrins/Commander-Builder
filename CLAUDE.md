@@ -32,3 +32,12 @@ Application web multi-utilisateurs : importer sa collection Magic (export ManaBo
 - Commits Conventional Commits en anglais, branches `feat/*` (jamais de commit direct sur main — hook bloquant).
 - Communication et documentation en français.
 - `composer.json` / `package.json` : jamais d'édition manuelle, toujours via `composer require` / `npm install` / `npm pkg set`.
+
+## Repo public — règles de commit
+
+Le repo est public (collecte de suggestions/bugs via issues, doc via wiki). Ne JAMAIS commiter :
+- données personnelles (emails, prix d'achat, exports bruts non anonymisés) — les fixtures doivent rester anonymisées ;
+- identifiants, tokens, mots de passe réels (les mots de passe de seed/test locaux sont tolérés mais ne doivent jamais servir en prod) ;
+- chemins serveur absolus ou noms d'utilisateur d'hébergement (écrire `~/commanderbuilder`) ;
+- captures d'écran contenant des données d'autres utilisateurs.
+En cas de doute, passer par un secret GitHub ou une variable d'environnement.
