@@ -29,6 +29,9 @@ export default defineNuxtConfig({
     public: {
       // En dev, le devProxy nitro route /api vers Symfony ; en prod, même origine ou domaine API.
       apiBase: '/api',
+      // Clé de site hCaptcha (publique). Défaut = clé de TEST hCaptcha (widget
+      // qui passe toujours) ; surcharger en prod via NUXT_PUBLIC_HCAPTCHA_SITE_KEY.
+      hcaptchaSiteKey: '10000000-ffff-ffff-ffff-000000000001',
     },
   },
 

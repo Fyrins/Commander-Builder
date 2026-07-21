@@ -4,7 +4,9 @@ namespace App\Controller;
 
 use App\Entity\User;
 use App\Repository\UserRepository;
+use App\Security\AuthCookieFactory;
 use Doctrine\ORM\EntityManagerInterface;
+use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -19,6 +21,8 @@ class RegisterController extends AbstractController
     public function __construct(
         private readonly RateLimiterFactory $registrationLimiter,
         private readonly string $environment,
+        private readonly JWTTokenManagerInterface $jwtManager,
+        private readonly AuthCookieFactory $cookieFactory,
     ) {
     }
 
@@ -82,6 +86,11 @@ class RegisterController extends AbstractController
         $entityManager->persist($user);
         $entityManager->flush();
 
-        return new JsonResponse(['id' => $user->getId(), 'username' => $user->getUsername()], 201);
+        // Auto-login : pose directement le cookie JWT, pour éviter un second
+        // appel /api/login (qui exigerait un nouveau token hCaptcha).
+        $response = new JsonResponse(['id' => $user->getId(), 'username' => $user->getUsername()], 201);
+        $response->headers->setCookie($this->cookieFactory->create($this->jwtManager->create($user)));
+
+        return $response;
     }
 }

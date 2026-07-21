@@ -11,7 +11,14 @@ Le compte FTP est chrooté sur `~/commanderbuilder` — tous les chemins des wor
 ## Secrets / variables GitHub
 
 - Secrets (faits) : `FTP_HOST`, `FTP_USERNAME`, `FTP_PASSWORD`
+- Variable `HCAPTCHA_SITE_KEY` : clé de site hCaptcha (publique), utilisée au build du front. Sans elle, le build utilise la clé de test.
 - Variables optionnelles : `FRONTEND_DIR` (défaut `./www/`), `API_DIR` (défaut `./api/`) — à créer seulement si l'arborescence FTP diffère.
+
+## hCaptcha
+
+Protège l'inscription et la connexion (actif en production uniquement). Créer une paire de clés sur hcaptcha.com pour le domaine `commanderbuilder.fr`, puis :
+- Front : variable de dépôt GitHub `HCAPTCHA_SITE_KEY` (clé de site, publique).
+- API : `HCAPTCHA_SECRET` dans le `.env.local` de prod (clé secrète). Sans cette clé réelle, la vérification échouera en prod (les clés de test ne valident que les tokens de test).
 
 ## Premier déploiement — étapes manuelles cPanel (une seule fois)
 
@@ -27,6 +34,7 @@ Le compte FTP est chrooté sur `~/commanderbuilder` — tous les chemins des wor
    DATABASE_URL="mysql://USER:PASS@127.0.0.1:3306/BASE?serverVersion=10.11.0-MariaDB&charset=utf8mb4"
    CORS_ALLOW_ORIGIN='^https://commanderbuilder\.fr$'
    JWT_COOKIE_SECURE=true
+   HCAPTCHA_SECRET=<clé secrète hCaptcha>
    EOF
    composer install --no-dev --optimize-autoloader
    php bin/console lexik:jwt:generate-keypair --skip-if-exists
