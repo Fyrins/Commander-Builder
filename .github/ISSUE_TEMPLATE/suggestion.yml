@@ -1,0 +1,24 @@
+name: Suggestion
+description: Proposer une amélioration ou une nouvelle fonctionnalité
+title: "[Suggestion] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: Le besoin
+      description: Quel problème cette suggestion résout-elle pour vous ?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: La proposition
+      description: Comment imaginez-vous la fonctionnalité ?
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Contexte
+      description: Exemples, decks concernés, autres outils qui le font bien…

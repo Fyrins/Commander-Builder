@@ -1,0 +1,32 @@
+name: Rapport de bug
+description: Signaler un dysfonctionnement de Commander Builder
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description du problème
+      description: Que se passe-t-il, et qu'attendiez-vous à la place ?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Étapes de reproduction
+      placeholder: |
+        1. Aller sur…
+        2. Cliquer sur…
+        3. Constater que…
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Navigateur et appareil
+      placeholder: "ex. Chrome 138 / macOS, Safari iOS 19…"
+  - type: textarea
+    id: extra
+    attributes:
+      label: Captures d'écran ou informations complémentaires
+      description: Attention à ne pas inclure d'informations personnelles dans les captures.
