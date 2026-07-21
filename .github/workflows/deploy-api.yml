@@ -22,7 +22,8 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftps
           local-dir: ./api/
-          server-dir: ${{ vars.API_DIR || './api.commanderbuilder.fr/' }}
+          # FTP chrooté sur /home/real5062/commanderbuilder
+          server-dir: ${{ vars.API_DIR || './api/' }}
           exclude: |
             **/.env.local
             **/config/jwt/**
@@ -35,7 +36,7 @@ jobs:
             echo ""
             echo "⚠️  composer.lock a changé."
             echo "   → Lancer manuellement via le terminal cPanel O2Switch :"
-            echo "     cd ~/api.commanderbuilder.fr"
+            echo "     cd ~/commanderbuilder/api"
             echo "     composer install --no-dev --optimize-autoloader"
             echo "     php bin/console cache:clear --env=prod --no-debug"
             echo "     php bin/console cache:warmup --env=prod --no-debug"

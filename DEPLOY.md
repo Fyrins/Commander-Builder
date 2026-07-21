@@ -2,21 +2,23 @@
 
 ## Architecture
 
-- **Front** : `commanderbuilder.fr` → statique Nuxt (`.output/public/`) dans `~/public_html/`
-- **API** : `api.commanderbuilder.fr` → sources Symfony dans `~/api.commanderbuilder.fr/`, docroot du sous-domaine pointé sur `~/api.commanderbuilder.fr/public/`
+Le compte FTP est chrooté sur `/home/real5062/commanderbuilder` — tous les chemins des workflows sont relatifs à ce dossier.
+
+- **Front** : `commanderbuilder.fr` → statique Nuxt (`.output/public/`) déployé dans `commanderbuilder/www/` — le docroot du domaine doit pointer sur `/home/real5062/commanderbuilder/www`
+- **API** : sources Symfony déployées dans `commanderbuilder/api/` — ⚠️ le docroot du sous-domaine `api.commanderbuilder.fr` doit pointer sur `/home/real5062/commanderbuilder/api/public` (JAMAIS sur `api/` directement : cela exposerait `.env.local`, `config/`, `var/` au public). Un `.htaccess` Symfony est fourni dans `public/`.
 - Cookie JWT : les deux hôtes sont same-site → le cookie `auth_token` posé par l'API est envoyé par le navigateur sans configuration particulière.
 
 ## Secrets / variables GitHub
 
 - Secrets (faits) : `FTP_HOST`, `FTP_USERNAME`, `FTP_PASSWORD`
-- Variables optionnelles : `FRONTEND_DIR` (défaut `./public_html/`), `API_DIR` (défaut `./api.commanderbuilder.fr/`) — à créer seulement si l'arborescence FTP diffère.
+- Variables optionnelles : `FRONTEND_DIR` (défaut `./www/`), `API_DIR` (défaut `./api/`) — à créer seulement si l'arborescence FTP diffère.
 
 ## Premier déploiement — étapes manuelles cPanel (une seule fois)
 
-1. **Sous-domaine** : créer `api.commanderbuilder.fr` avec racine `~/api.commanderbuilder.fr/public` (le dossier sera rempli par le workflow ; créer le dossier vide d'abord si cPanel l'exige). Vérifier que l'AutoSSL couvre le domaine ET le sous-domaine.
+1. **Sous-domaine** : créer `api.commanderbuilder.fr` avec racine `/home/real5062/commanderbuilder/api/public` (le dossier sera rempli par le workflow ; créer le dossier vide d'abord si cPanel l'exige). Vérifier que l'AutoSSL couvre le domaine ET le sous-domaine.
 2. **MySQL** : créer une base + un utilisateur dédié (tout en `utf8mb4`), noter les identifiants.
 3. **Pousser sur `main`** (merge de develop) → les deux workflows uploadent front et API.
-4. **Terminal cPanel** — dans `~/api.commanderbuilder.fr/` :
+4. **Terminal cPanel** — dans `~/commanderbuilder/api/` :
    ```bash
    # .env.local de prod (jamais uploadé par le workflow)
    cat > .env.local <<'EOF'
