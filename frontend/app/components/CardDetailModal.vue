@@ -52,12 +52,12 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown))
       @click.self="emit('close')"
     >
       <div
-        class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 text-slate-900 shadow-2xl dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+        class="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl panel p-6 text-strong shadow-2xl   "
       >
         <div class="mb-4 flex items-start justify-between gap-4">
           <div>
             <h2 class="text-xl font-semibold">{{ displayName }}</h2>
-            <p v-if="card.printedName && card.printedName !== card.name" class="text-sm text-slate-500 dark:text-slate-400">
+            <p v-if="card.printedName && card.printedName !== card.name" class="text-sm text-muted">
               {{ card.name }}
             </p>
           </div>
@@ -88,18 +88,18 @@ onUnmounted(() => document.removeEventListener('keydown', onKeydown))
               <ManaCost :cost="card.manaCost" class="text-base" />
             </div>
 
-            <OracleText :text="card.oracleText" class="text-slate-700 dark:text-slate-200" />
+            <OracleText :text="card.oracleText" class="text-strong" />
 
-            <dl class="grid grid-cols-2 gap-x-4 gap-y-1 text-slate-600 dark:text-slate-400">
+            <dl class="grid grid-cols-2 gap-x-4 gap-y-1 text-muted">
               <dt>Édition</dt>
-              <dd class="text-right font-medium uppercase text-slate-900 dark:text-slate-100">
+              <dd class="text-right font-medium uppercase text-strong">
                 {{ card.setCode }} · {{ card.collectorNumber }}
               </dd>
               <dt>Prix (Cardmarket)</dt>
-              <dd class="text-right font-medium text-slate-900 dark:text-slate-100">{{ formatPrice(card.priceEur) }}</dd>
+              <dd class="text-right font-medium text-strong">{{ formatPrice(card.priceEur) }}</dd>
               <template v-if="card.priceEurFoil">
                 <dt>Prix foil</dt>
-                <dd class="text-right font-medium text-slate-900 dark:text-slate-100">{{ formatPrice(card.priceEurFoil) }}</dd>
+                <dd class="text-right font-medium text-strong">{{ formatPrice(card.priceEurFoil) }}</dd>
               </template>
             </dl>
 

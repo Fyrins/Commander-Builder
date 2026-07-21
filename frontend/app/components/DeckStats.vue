@@ -71,12 +71,12 @@ const drawKOptions = Array.from({ length: 14 }, (_, index) => index + 7)
 </script>
 
 <template>
-  <section class="space-y-6 rounded-xl border border-slate-200 p-6 dark:border-slate-800">
+  <section class="space-y-6 panel p-6 ">
     <h2 class="text-lg font-semibold">Stats du deck</h2>
 
     <!-- Courbe de mana -->
     <div>
-      <h3 class="mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">Courbe de mana</h3>
+      <h3 class="mb-2 text-sm font-medium text-muted">Courbe de mana</h3>
       <div class="flex h-32 items-end gap-1.5">
         <div v-for="bucket in curve.buckets" :key="bucket.label" class="flex flex-1 flex-col items-center gap-1">
           <div class="flex h-24 w-full items-end justify-center">
@@ -86,24 +86,24 @@ const drawKOptions = Array.from({ length: 14 }, (_, index) => index + 7)
             />
           </div>
           <span class="text-[10px] font-medium">{{ bucket.count }}</span>
-          <span class="text-[10px] text-slate-500 dark:text-slate-400">{{ bucket.label }}</span>
+          <span class="text-[10px] text-muted">{{ bucket.label }}</span>
         </div>
       </div>
-      <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
-        Valeur moyenne : <span class="font-medium text-slate-700 dark:text-slate-300">{{ curve.avgManaValue }}</span>
-        · Valeur totale : <span class="font-medium text-slate-700 dark:text-slate-300">{{ curve.totalManaValue }}</span>
+      <p class="mt-2 text-xs text-muted">
+        Valeur moyenne : <span class="font-medium text-muted">{{ curve.avgManaValue }}</span>
+        · Valeur totale : <span class="font-medium text-muted">{{ curve.totalManaValue }}</span>
       </p>
     </div>
 
     <!-- Coûts par couleur -->
     <div>
-      <h3 class="mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">Coûts par couleur</h3>
+      <h3 class="mb-2 text-sm font-medium text-muted">Coûts par couleur</h3>
       <ul class="space-y-1.5">
         <li v-for="row in pipRows" :key="row.key" class="flex items-center gap-3">
           <ManaSymbol v-if="row.key !== 'colorless'" :code="row.key" />
           <span v-else class="badge badge--neutral">{{ row.label }}</span>
           <div class="flex-1"><ProgressBar :percent="row.stat.percent" /></div>
-          <span class="w-32 shrink-0 text-right text-xs text-slate-500 dark:text-slate-400">
+          <span class="w-32 shrink-0 text-right text-xs text-muted">
             {{ row.stat.pips }} pips · {{ row.stat.cards }} cartes
           </span>
         </li>
@@ -112,24 +112,24 @@ const drawKOptions = Array.from({ length: 14 }, (_, index) => index + 7)
 
     <!-- Production par couleur -->
     <div>
-      <h3 class="mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">Production de mana</h3>
+      <h3 class="mb-2 text-sm font-medium text-muted">Production de mana</h3>
       <ul class="space-y-1.5">
         <li v-for="row in productionRows" :key="row.key" class="flex items-center gap-3">
           <ManaSymbol v-if="row.key !== 'C'" :code="row.key" />
           <span v-else class="badge badge--neutral">{{ row.label }}</span>
           <div class="flex-1"><ProgressBar :percent="row.stat.percent" /></div>
-          <span class="w-24 shrink-0 text-right text-xs text-slate-500 dark:text-slate-400">{{ row.stat.sources }} sources</span>
+          <span class="w-24 shrink-0 text-right text-xs text-muted">{{ row.stat.sources }} sources</span>
         </li>
       </ul>
     </div>
 
     <!-- Répartition par type -->
     <div>
-      <h3 class="mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">Répartition par type</h3>
+      <h3 class="mb-2 text-sm font-medium text-muted">Répartition par type</h3>
       <ul class="space-y-1.5">
         <li v-for="row in typeRows" :key="row.key" class="flex items-center gap-3">
-          <span class="w-28 shrink-0 text-xs text-slate-600 dark:text-slate-300">{{ row.label }}</span>
-          <div class="h-2 flex-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+          <span class="w-28 shrink-0 text-xs text-muted">{{ row.label }}</span>
+          <div class="h-2 flex-1 overflow-hidden rounded-full surface-alt">
             <div class="h-full rounded-full bg-sky-500" :style="{ width: `${(row.count / maxTypeCount) * 100}%` }" />
           </div>
           <span class="w-8 shrink-0 text-right text-xs font-medium">{{ row.count }}</span>
@@ -139,17 +139,17 @@ const drawKOptions = Array.from({ length: 14 }, (_, index) => index + 7)
 
     <!-- Probabilité de pioche -->
     <div>
-      <h3 class="mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">Probabilité de pioche</h3>
-      <p class="flex flex-wrap items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+      <h3 class="mb-2 text-sm font-medium text-muted">Probabilité de pioche</h3>
+      <p class="flex flex-wrap items-center gap-2 text-sm text-muted">
         Probabilité de piocher au moins
-        <select v-model.number="drawN" class="rounded-md border border-slate-300 bg-white px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800">
+        <select v-model.number="drawN" class="rounded-md field-select px-2 py-1 text-sm  ">
           <option v-for="n in [1, 2, 3, 4]" :key="n" :value="n">{{ n }}</option>
         </select>
-        <select v-model="drawType" class="rounded-md border border-slate-300 bg-white px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800">
+        <select v-model="drawType" class="rounded-md field-select px-2 py-1 text-sm  ">
           <option v-for="key in TYPE_ORDER" :key="key" :value="key">{{ TYPE_LABELS[key] }}</option>
         </select>
         en
-        <select v-model.number="drawK" class="rounded-md border border-slate-300 bg-white px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800">
+        <select v-model.number="drawK" class="rounded-md field-select px-2 py-1 text-sm  ">
           <option v-for="k in drawKOptions" :key="k" :value="k">{{ k }}</option>
         </select>
         cartes piochées

@@ -1,20 +1,289 @@
 @import 'tailwindcss';
 
+/* Cinzel — titres, marque, chiffres de complétion (esprit gravure). */
+@import '@fontsource/cinzel/500.css';
+@import '@fontsource/cinzel/600.css';
+@import '@fontsource/cinzel/700.css';
+/* Alegreya Sans — corps de texte, données, tableaux. */
+@import '@fontsource/alegreya-sans/400.css';
+@import '@fontsource/alegreya-sans/500.css';
+@import '@fontsource/alegreya-sans/700.css';
+
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* =============================================================================
+ * Grimoire arcanique — jetons de thème
+ * Sombre (défaut) : encre chaude brun-noir. Clair : parchemin, encre brune.
+ * L'accent or/laiton reste réservé aux surfaces, bordures, icônes — jamais au
+ * texte sur fond clair (contraste insuffisant), voir .btn--primary ci-dessous.
+ * ========================================================================== */
 :root {
   --mtg-white: #f8f6d8;
   --mtg-blue: #c1d7e9;
   --mtg-black: #bab1ab;
   --mtg-red: #e49977;
   --mtg-green: #a3c095;
+
+  --font-display: 'Cinzel', 'Cambria', serif;
+  --font-body: 'Alegreya Sans', 'Segoe UI', sans-serif;
+
+  /* Clair — parchemin */
+  --ink-bg: #f4eddd;
+  --ink-panel: #faf6ec;
+  --ink-panel-alt: #eee3c9;
+  --ink-text: #2b2015;
+  --ink-text-muted: #6b5842;
+  --ink-border: rgb(43 32 21 / 16%);
+  --ink-border-strong: rgb(43 32 21 / 32%);
+  --ink-shadow: rgb(43 32 21 / 14%);
+
+  --gold: #ad8438;
+  --gold-surface: #c9a35c;
+  --gold-surface-hover: #dcb976;
+  --gold-border: rgb(173 132 56 / 45%);
+  --gold-ring: rgb(201 163 92 / 55%);
+
+  --owned-text: #3f6b4a;
+  --owned-bg: rgb(63 107 74 / 12%);
+  --missing-text: #8c3a2b;
+  --missing-bg: rgb(140 58 43 / 12%);
+
+  --grain-opacity: 0.05;
+
+  color-scheme: light;
+}
+
+:root.dark {
+  /* Sombre — encre chaude brun-noir */
+  --ink-bg: #0f0c08;
+  --ink-panel: #1a1510;
+  --ink-panel-alt: #221b13;
+  --ink-text: #ece4d3;
+  --ink-text-muted: #b0a48c;
+  --ink-border: rgb(201 163 92 / 14%);
+  --ink-border-strong: rgb(201 163 92 / 32%);
+  --ink-shadow: rgb(0 0 0 / 45%);
+
+  --gold: #dcb976;
+  --gold-surface: #c9a35c;
+  --gold-surface-hover: #dcb976;
+  --gold-border: rgb(201 163 92 / 40%);
+  --gold-ring: rgb(220 185 118 / 55%);
+
+  --owned-text: #9fc7a8;
+  --owned-bg: rgb(159 199 168 / 14%);
+  --missing-text: #e5a48f;
+  --missing-bg: rgb(229 164 143 / 14%);
+
+  --grain-opacity: 0.07;
+
+  color-scheme: dark;
+}
+
+@property --ring-value {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
 }
 
 html {
   scroll-behavior: smooth;
 }
 
+body {
+  background-color: var(--ink-bg);
+  color: var(--ink-text);
+  font-family: var(--font-body);
+  position: relative;
+  transition: background-color 200ms ease-out, color 200ms ease-out;
+}
+
+/* Grain de fond très subtil — bruit SVG inline en data-URI, opacité faible. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+}
+
+/* Halo discret derrière le contenu principal */
+#__nuxt {
+  position: relative;
+  z-index: 1;
+}
+
+::selection {
+  background-color: var(--gold-ring);
+  color: var(--ink-text);
+}
+
+/* Titres en Cinzel (gravure) — s'applique aux h1/h2/h3 des pages. */
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  letter-spacing: 0.01em;
+  color: var(--ink-text);
+}
+
+/* Champ auto-rempli : garder l'encre du thème plutôt que le jaune navigateur */
+input:-webkit-autofill,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--ink-text);
+  transition: background-color 9999s ease-out;
+}
+
+/* Chiffres tabulaires — stats, prix, tableaux */
+.tabular-nums,
+.stat-value,
+table {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* =============================================================================
+ * Motion — apparition orchestrée, anneaux de complétion, shimmer
+ * ========================================================================== */
+@keyframes grimoire-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ring-fill {
+  to {
+    --ring-value: var(--ring-target);
+  }
+}
+
+@keyframes shimmer-sweep {
+  from {
+    background-position: -120% 0;
+  }
+  to {
+    background-position: 220% 0;
+  }
+}
+
 @layer components {
+  /* Apparition orchestrée : à poser sur le conteneur d'une page/section, chaque
+   * enfant direct hérite d'un délai croissant (stagger). */
+  .anim-stagger > * {
+    animation: grimoire-rise 380ms ease-out both;
+  }
+  .anim-stagger > *:nth-child(1) { animation-delay: 0ms; }
+  .anim-stagger > *:nth-child(2) { animation-delay: 60ms; }
+  .anim-stagger > *:nth-child(3) { animation-delay: 120ms; }
+  .anim-stagger > *:nth-child(4) { animation-delay: 180ms; }
+  .anim-stagger > *:nth-child(5) { animation-delay: 240ms; }
+  .anim-stagger > *:nth-child(6) { animation-delay: 300ms; }
+  .anim-stagger > *:nth-child(7) { animation-delay: 360ms; }
+  .anim-stagger > *:nth-child(8) { animation-delay: 420ms; }
+  .anim-stagger > *:nth-child(n+9) { animation-delay: 480ms; }
+
+  .anim-rise {
+    animation: grimoire-rise 340ms ease-out both;
+  }
+
+  /* Anneau de complétion (conic-gradient) animé à l'arrivée via @property.
+   * Usage : class="ring" :style="{ '--ring-target': percent }" */
+  .ring {
+    --ring-value: 0;
+    --ring-target: 0;
+    border-radius: 9999px;
+    background: conic-gradient(var(--gold-surface) calc(var(--ring-value) * 1%), var(--ink-border-strong) calc(var(--ring-value) * 1%) 100%);
+    animation: ring-fill 900ms 150ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ring {
+      animation: none;
+      --ring-value: var(--ring-target);
+    }
+  }
+
+  /* ---------------------------------------------------------------------
+   * .panel — surface « carte » (langage carte Magic) : double bordure fine,
+   * coins arrondis ~12px, ombre douce, lift au survol si interactif.
+   * ------------------------------------------------------------------- */
+  .panel {
+    @apply rounded-xl;
+    background-color: var(--ink-panel);
+    border: 1px solid var(--ink-border);
+    box-shadow:
+      0 0 0 1px rgb(255 255 255 / 4%) inset,
+      0 4px 14px -6px var(--ink-shadow);
+    transition: border-color 150ms ease-out, transform 150ms ease-out, box-shadow 150ms ease-out;
+  }
+
+  .panel--interactive {
+    cursor: pointer;
+  }
+
+  .panel--interactive:hover,
+  .panel--interactive:focus-visible {
+    border-color: var(--gold-border);
+    transform: translateY(-2px);
+    box-shadow:
+      0 0 0 1px var(--gold-ring) inset,
+      0 10px 22px -8px var(--ink-shadow);
+  }
+
+  /* ---------------------------------------------------------------------
+   * .field — champ de formulaire réutilisable (input/select/textarea)
+   * ------------------------------------------------------------------- */
+  .field {
+    @apply w-full rounded-md px-3 py-2 text-sm outline-none transition-colors;
+    background-color: var(--ink-panel);
+    border: 1px solid var(--ink-border-strong);
+    color: var(--ink-text);
+  }
+
+  .field::placeholder {
+    color: var(--ink-text-muted);
+  }
+
+  .field:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px var(--gold-ring);
+  }
+
+  /* Variante compacte pour les selects/inputs inline (padding porté par la vue). */
+  .field-select {
+    background-color: var(--ink-panel);
+    border: 1px solid var(--ink-border-strong);
+    border-radius: 0.375rem;
+    color: var(--ink-text);
+    outline: none;
+  }
+  .field-select:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px var(--gold-ring);
+  }
+
   /* ---------------------------------------------------------------------
    * .mana — disque de symbole de mana (coûts + texte oracle)
    * Taille relative à la police environnante (em) pour s'adapter au contexte.
@@ -136,33 +405,58 @@ html {
 
   /* ---------------------------------------------------------------------
    * .btn — bouton d'action réutilisable
+   * primary : plaque or / encre selon thème (jamais de texte or sur clair)
    * ------------------------------------------------------------------- */
   .btn {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-60;
   }
 
   .btn--primary {
-    @apply bg-slate-900 text-white hover:bg-slate-800;
+    background-color: var(--gold-surface);
+    color: #241b0d;
+    box-shadow: 0 1px 0 0 rgb(255 255 255 / 25%) inset;
 
     @variant dark {
-      @apply bg-white text-slate-900 hover:bg-slate-200;
+      background-color: var(--ink-panel-alt);
+      color: var(--gold);
+      border: 1px solid var(--gold-border);
+      box-shadow: none;
+    }
+
+    &:hover:not(:disabled) {
+      background-color: var(--gold-surface-hover);
+      transform: translateY(-1px);
+
+      @variant dark {
+        background-color: var(--ink-panel);
+        border-color: var(--gold);
+        color: var(--gold-surface-hover);
+      }
     }
   }
 
   .btn--secondary {
-    @apply border border-slate-300 bg-transparent text-slate-700 hover:bg-slate-100;
-
-    @variant dark {
-      @apply border-slate-700 text-slate-200 hover:bg-slate-800;
-    }
+    background-color: transparent;
+    color: var(--ink-text);
+    border: 1px solid var(--ink-border-strong);
+  }
+  .btn--secondary:hover:not(:disabled) {
+    border-color: var(--gold);
+    color: var(--gold);
   }
 
   .btn--ghost {
-    @apply bg-transparent text-slate-600 hover:bg-slate-200/60 hover:text-slate-900;
+    background-color: transparent;
+    color: var(--ink-text-muted);
+  }
+  .btn--ghost:hover:not(:disabled) {
+    background-color: var(--ink-panel-alt);
+    color: var(--ink-text);
+  }
 
-    @variant dark {
-      @apply text-slate-300 hover:bg-slate-800 hover:text-white;
-    }
+  .btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--gold-ring);
   }
 
   /* ---------------------------------------------------------------------
@@ -173,26 +467,89 @@ html {
   }
 
   .badge--owned {
-    @apply bg-emerald-100 text-emerald-700;
-
-    @variant dark {
-      @apply bg-emerald-900/40 text-emerald-300;
-    }
+    background-color: var(--owned-bg);
+    color: var(--owned-text);
   }
 
   .badge--missing {
-    @apply bg-red-100 text-red-700;
-
-    @variant dark {
-      @apply bg-red-900/40 text-red-300;
-    }
+    background-color: var(--missing-bg);
+    color: var(--missing-text);
   }
 
   .badge--neutral {
-    @apply bg-slate-100 text-slate-600;
-
-    @variant dark {
-      @apply bg-slate-800 text-slate-300;
-    }
+    background-color: var(--ink-panel-alt);
+    color: var(--ink-text-muted);
   }
+
+  /* ---------------------------------------------------------------------
+   * .progress — barre de progression, avec variante shimmer pendant charge
+   * ------------------------------------------------------------------- */
+  .progress-track {
+    @apply h-2 w-full overflow-hidden rounded-full;
+    background-color: var(--ink-panel-alt);
+    border: 1px solid var(--ink-border);
+  }
+
+  .progress-fill {
+    @apply h-full rounded-full;
+    background-color: var(--gold-surface);
+    transition: width 400ms ease-out;
+  }
+
+  .progress-fill--loading {
+    background-image: linear-gradient(
+      90deg,
+      var(--gold-surface) 0%,
+      var(--gold-surface-hover) 50%,
+      var(--gold-surface) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer-sweep 1.4s ease-in-out infinite;
+  }
+
+  /* ---------------------------------------------------------------------
+   * .sigil — petite couronne géométrique (marque)
+   * ------------------------------------------------------------------- */
+  .sigil {
+    color: var(--gold);
+  }
+
+  /* checkbox aux couleurs du thème */
+  .mtg-checkbox {
+    @apply rounded;
+    accent-color: var(--gold-surface);
+    border: 1px solid var(--ink-border-strong);
+  }
+
+  /* pastille de filtre couleur sélectionnée (page Commandants) */
+  .mtg-selected {
+    border-color: var(--gold) !important;
+    box-shadow: 0 0 0 2px var(--gold-ring);
+  }
+}
+
+/* -----------------------------------------------------------------------------
+ * Utilitaires de thème variant-compatibles (hover:/focus:/dark: fonctionnent)
+ * Remplacent les slate-* Tailwind dans les vues.
+ * -------------------------------------------------------------------------- */
+@utility text-muted {
+  color: var(--ink-text-muted);
+}
+@utility text-strong {
+  color: var(--ink-text);
+}
+@utility text-gold {
+  color: var(--gold);
+}
+@utility hairline {
+  border-color: var(--ink-border);
+}
+@utility hairline-strong {
+  border-color: var(--ink-border-strong);
+}
+@utility surface {
+  background-color: var(--ink-panel);
+}
+@utility surface-alt {
+  background-color: var(--ink-panel-alt);
 }
