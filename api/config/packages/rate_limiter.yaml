@@ -1,0 +1,7 @@
+framework:
+    rate_limiter:
+        # Limite les créations de compte par IP (anti-spam d'inscriptions)
+        registration:
+            policy: 'sliding_window'
+            limit: 5
+            interval: '15 minutes'
