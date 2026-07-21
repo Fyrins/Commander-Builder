@@ -45,7 +45,7 @@ class HcaptchaListener
 
         if (!$this->verifier->verify(is_string($token) ? $token : null, $request->getClientIp())) {
             $event->setResponse(new JsonResponse(
-                ['code' => Response::HTTP_BAD_REQUEST, 'message' => 'Vérification anti-robot échouée. Merci de recommencer.'],
+                ['error' => 'Vérification anti-robot échouée. Merci de recommencer.'],
                 Response::HTTP_BAD_REQUEST,
             ));
         }

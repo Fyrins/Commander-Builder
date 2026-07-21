@@ -30,7 +30,7 @@ Le moteur de matching (parsing CSV/decklist, fusion du pool, scoring, statistiqu
 
 ## Prérequis
 
-PHP 8.3, Composer, Node 22+, MySQL (ou MariaDB).
+PHP 8.2+, Composer, Node 22+, MySQL (ou MariaDB).
 
 ## Démarrage local
 
@@ -52,7 +52,7 @@ npm install
 npm run dev
 ```
 
-Le front proxifie `/api` vers `http://127.0.0.1:8000` en développement.
+Le front proxifie `/api` vers `http://127.0.0.1:8000/api` en développement (voir `nitro.devProxy` dans `nuxt.config.ts`).
 
 ## Tests
 
