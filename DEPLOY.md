@@ -2,10 +2,10 @@
 
 ## Architecture
 
-Le compte FTP est chrooté sur `/home/real5062/commanderbuilder` — tous les chemins des workflows sont relatifs à ce dossier.
+Le compte FTP est chrooté sur `~/commanderbuilder` — tous les chemins des workflows sont relatifs à ce dossier.
 
-- **Front** : `commanderbuilder.fr` → statique Nuxt (`.output/public/`) déployé dans `commanderbuilder/www/` — le docroot du domaine doit pointer sur `/home/real5062/commanderbuilder/www`
-- **API** : sources Symfony déployées dans `commanderbuilder/api/` — ⚠️ le docroot du sous-domaine `api.commanderbuilder.fr` doit pointer sur `/home/real5062/commanderbuilder/api/public` (JAMAIS sur `api/` directement : cela exposerait `.env.local`, `config/`, `var/` au public). Un `.htaccess` Symfony est fourni dans `public/`.
+- **Front** : `commanderbuilder.fr` → statique Nuxt (`.output/public/`) déployé dans `commanderbuilder/www/` — le docroot du domaine doit pointer sur `~/commanderbuilder/www`
+- **API** : sources Symfony déployées dans `commanderbuilder/api/` — ⚠️ le docroot du sous-domaine `api.commanderbuilder.fr` doit pointer sur `~/commanderbuilder/api/public` (JAMAIS sur `api/` directement : cela exposerait `.env.local`, `config/`, `var/` au public). Un `.htaccess` Symfony est fourni dans `public/`.
 - Cookie JWT : les deux hôtes sont same-site → le cookie `auth_token` posé par l'API est envoyé par le navigateur sans configuration particulière.
 
 ## Secrets / variables GitHub
@@ -15,7 +15,7 @@ Le compte FTP est chrooté sur `/home/real5062/commanderbuilder` — tous les ch
 
 ## Premier déploiement — étapes manuelles cPanel (une seule fois)
 
-1. **Sous-domaine** : créer `api.commanderbuilder.fr` avec racine `/home/real5062/commanderbuilder/api/public` (le dossier sera rempli par le workflow ; créer le dossier vide d'abord si cPanel l'exige). Vérifier que l'AutoSSL couvre le domaine ET le sous-domaine.
+1. **Sous-domaine** : créer `api.commanderbuilder.fr` avec racine `~/commanderbuilder/api/public` (le dossier sera rempli par le workflow ; créer le dossier vide d'abord si cPanel l'exige). Vérifier que l'AutoSSL couvre le domaine ET le sous-domaine.
 2. **MySQL** : créer une base + un utilisateur dédié (tout en `utf8mb4`), noter les identifiants.
 3. **Pousser sur `main`** (merge de develop) → les deux workflows uploadent front et API.
 4. **Terminal cPanel** — dans `~/commanderbuilder/api/` :

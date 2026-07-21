@@ -38,7 +38,7 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftps
           local-dir: ./frontend/.output/public/
-          # FTP chrooté sur /home/real5062/commanderbuilder
+          # FTP chrooté sur la racine du compte
           server-dir: ${{ vars.FRONTEND_DIR || './www/' }}
 
   smoke-test:
