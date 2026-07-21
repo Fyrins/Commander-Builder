@@ -10,13 +10,6 @@ onMounted(() => {
 
 const COLOR_ORDER = ['W', 'U', 'B', 'R', 'G'] as const
 const COLOR_LABELS: Record<string, string> = { W: 'Blanc', U: 'Bleu', B: 'Noir', R: 'Rouge', G: 'Vert' }
-const COLOR_VARS: Record<string, string> = {
-  W: 'var(--mtg-white)',
-  U: 'var(--mtg-blue)',
-  B: 'var(--mtg-black)',
-  R: 'var(--mtg-red)',
-  G: 'var(--mtg-green)',
-}
 
 const commanders = computed(() => detectCommanders(store.poolCards.value))
 
@@ -33,10 +26,14 @@ function resetColors() {
   selectedColors.value = new Set()
 }
 
+// Sémantique « couleurs disponibles » : on affiche les commandants dont
+// l'identité de couleur tient dans les couleurs cochées (incluses ou moins).
+// Les commandants incolores restent visibles (identité vide ⊆ tout).
 const filteredCommanders = computed(() => {
   if (selectedColors.value.size === 0) return commanders.value
-  const wanted = Array.from(selectedColors.value)
-  return commanders.value.filter((card) => wanted.every((color) => card.colorIdentity.includes(color)))
+  return commanders.value.filter((card) =>
+    card.colorIdentity.every((color) => selectedColors.value.has(color)),
+  )
 })
 </script>
 
@@ -55,13 +52,16 @@ const filteredCommanders = computed(() => {
         v-for="color in COLOR_ORDER"
         :key="color"
         type="button"
-        class="h-7 w-7 rounded-full border-2 transition"
-        :class="selectedColors.has(color) ? 'mtg-selected' : 'border-transparent opacity-50 hover:opacity-80'"
-        :style="{ backgroundColor: COLOR_VARS[color] }"
-        :aria-pressed="selectedColors.has(color)"
+        role="checkbox"
+        class="mana-filter text-2xl leading-none transition"
+        :class="selectedColors.has(color) ? 'mana-filter--on' : 'mana-filter--off'"
+        :aria-checked="selectedColors.has(color)"
+        :aria-label="COLOR_LABELS[color]"
         :title="COLOR_LABELS[color]"
         @click="toggleColor(color)"
-      />
+      >
+        <ManaSymbol :code="color" />
+      </button>
       <button
         v-if="selectedColors.size"
         type="button"

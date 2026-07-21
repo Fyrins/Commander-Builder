@@ -521,10 +521,27 @@ table {
     border: 1px solid var(--ink-border-strong);
   }
 
-  /* pastille de filtre couleur sélectionnée (page Commandants) */
-  .mtg-selected {
-    border-color: var(--gold) !important;
-    box-shadow: 0 0 0 2px var(--gold-ring);
+  /* Filtre couleur (page Commandants) : symbole de mana en case à cocher.
+     Coché = pleine opacité + anneau or ; décoché = atténué. */
+  .mana-filter {
+    @apply inline-flex items-center justify-center rounded-full;
+    cursor: pointer;
+    transition: opacity 150ms ease-out, box-shadow 150ms ease-out, transform 150ms ease-out;
+  }
+  .mana-filter:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--gold-ring);
+  }
+  .mana-filter--off {
+    opacity: 0.4;
+  }
+  .mana-filter--off:hover {
+    opacity: 0.75;
+  }
+  .mana-filter--on {
+    opacity: 1;
+    box-shadow: 0 0 0 2px var(--gold);
+    transform: translateY(-1px);
   }
 }
 
