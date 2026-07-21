@@ -4,7 +4,7 @@ definePageMeta({ layout: false })
 const { register } = useAuth()
 const router = useRouter()
 
-const email = ref('')
+const username = ref('')
 const password = ref('')
 const passwordConfirm = ref('')
 const errorMessage = ref('')
@@ -20,11 +20,16 @@ async function handleSubmit() {
 
   pending.value = true
   try {
-    await register(email.value, password.value)
+    await register(username.value, password.value)
     await router.push('/')
   } catch (error: unknown) {
     const status = (error as { response?: { status?: number } })?.response?.status
-    errorMessage.value = status === 409 ? 'Cet email est déjà utilisé.' : 'Une erreur est survenue. Réessayez.'
+    if (status === 409) {
+      errorMessage.value = 'Ce pseudonyme est déjà utilisé.'
+    } else {
+      const message = (error as { data?: { error?: string } })?.data?.error
+      errorMessage.value = status === 400 && message ? message : 'Une erreur est survenue. Réessayez.'
+    }
   } finally {
     pending.value = false
   }
@@ -39,13 +44,13 @@ async function handleSubmit() {
 
       <form class="space-y-4" @submit.prevent="handleSubmit">
         <div>
-          <label for="email" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Email</label>
+          <label for="username" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Pseudonyme</label>
           <input
-            id="email"
-            v-model="email"
-            type="email"
+            id="username"
+            v-model="username"
+            type="text"
             required
-            autocomplete="email"
+            autocomplete="username"
             class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           >
         </div>
@@ -71,6 +76,11 @@ async function handleSubmit() {
             class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           >
         </div>
+
+        <p class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+          Aucune adresse email n'est collectée : si tu perds ton mot de passe, le compte ne pourra pas être récupéré.
+          Choisis un mot de passe que tu sauras retrouver (gestionnaire de mots de passe recommandé).
+        </p>
 
         <p v-if="errorMessage" class="text-sm text-red-600 dark:text-red-400">{{ errorMessage }}</p>
 

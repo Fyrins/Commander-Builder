@@ -29,30 +29,42 @@ class RegisterController extends AbstractController
             return new JsonResponse(['error' => 'Corps de requête JSON invalide.'], 400);
         }
 
-        $email = trim((string) ($payload['email'] ?? ''));
+        $username = trim((string) ($payload['username'] ?? ''));
         $password = (string) ($payload['password'] ?? '');
 
-        $violations = $validator->validate($email, [new Assert\NotBlank(), new Assert\Email()]);
+        $violations = $validator->validate($username, [
+            new Assert\NotBlank(message: 'Le pseudonyme est obligatoire.'),
+            new Assert\Length(
+                min: 3,
+                max: 30,
+                minMessage: 'Le pseudonyme doit contenir au moins {{ limit }} caractères.',
+                maxMessage: 'Le pseudonyme doit contenir au maximum {{ limit }} caractères.',
+            ),
+            new Assert\Regex(
+                pattern: '/^[A-Za-z0-9_-]+$/',
+                message: 'Le pseudonyme ne peut contenir que des lettres, chiffres, tirets et underscores.',
+            ),
+        ]);
         if (count($violations) > 0) {
-            return new JsonResponse(['error' => 'Adresse email invalide.'], 400);
+            return new JsonResponse(['error' => (string) $violations[0]->getMessage()], 400);
         }
 
         if (strlen($password) < 8) {
             return new JsonResponse(['error' => 'Le mot de passe doit contenir au moins 8 caractères.'], 400);
         }
 
-        if ($userRepository->findOneBy(['email' => $email]) !== null) {
-            return new JsonResponse(['error' => 'Cette adresse email est déjà utilisée.'], 409);
+        if ($userRepository->findOneBy(['username' => $username]) !== null) {
+            return new JsonResponse(['error' => 'Ce pseudonyme est déjà utilisé.'], 409);
         }
 
         $user = new User();
-        $user->setEmail($email);
+        $user->setUsername($username);
         $user->setRoles(['ROLE_USER']);
         $user->setPassword($passwordHasher->hashPassword($user, $password));
 
         $entityManager->persist($user);
         $entityManager->flush();
 
-        return new JsonResponse(['id' => $user->getId(), 'email' => $user->getEmail()], 201);
+        return new JsonResponse(['id' => $user->getId(), 'username' => $user->getUsername()], 201);
     }
 }

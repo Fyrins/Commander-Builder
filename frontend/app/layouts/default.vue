@@ -26,7 +26,7 @@ async function handleLogout() {
       <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-3">
         <div class="flex flex-wrap items-center gap-6">
           <NuxtLink to="/" class="text-lg font-semibold tracking-tight">
-            MTG Commander Builder
+            Commander Builder
           </NuxtLink>
           <nav class="flex flex-wrap gap-1">
             <NuxtLink
@@ -57,7 +57,7 @@ async function handleLogout() {
             </svg>
           </button>
 
-          <span v-if="user" class="hidden text-sm text-slate-500 sm:inline dark:text-slate-400">{{ user.email }}</span>
+          <span v-if="user" class="hidden text-sm text-slate-500 sm:inline dark:text-slate-400">{{ user.username }}</span>
           <button
             v-if="user"
             type="button"
@@ -73,5 +73,14 @@ async function handleLogout() {
     <main class="mx-auto max-w-6xl px-4 py-6">
       <slot />
     </main>
+
+    <footer class="mx-auto max-w-6xl px-4 py-6 text-center text-xs text-slate-400 dark:text-slate-600">
+      <p>
+        Commander Builder is unofficial Fan Content permitted under the Fan Content Policy. Not
+        approved/endorsed by Wizards. Portions of the materials used are property of Wizards of
+        the Coast. ©Wizards of the Coast LLC.
+      </p>
+      <p>Données cartes et images fournies par Scryfall — statistiques de popularité par EDHREC.</p>
+    </footer>
   </div>
 </template>
