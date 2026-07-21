@@ -6,6 +6,8 @@ const router = useRouter()
 
 const username = ref('')
 const password = ref('')
+const captchaToken = ref<string | null>(null)
+const captcha = ref<{ reset: () => void } | null>(null)
 const errorMessage = ref('')
 const pending = ref(false)
 
@@ -13,11 +15,15 @@ async function handleSubmit() {
   errorMessage.value = ''
   pending.value = true
   try {
-    await login(username.value, password.value)
+    await login(username.value, password.value, captchaToken.value)
     await router.push('/')
   } catch (error: unknown) {
     const status = (error as { response?: { status?: number } })?.response?.status
-    errorMessage.value = status === 401 ? 'Pseudonyme ou mot de passe incorrect.' : 'Une erreur est survenue. Réessayez.'
+    if (status === 429) errorMessage.value = 'Trop de tentatives. Réessayez dans une minute.'
+    else if (status === 400) errorMessage.value = 'Vérification anti-robot échouée. Merci de recommencer.'
+    else if (status === 401) errorMessage.value = 'Pseudonyme ou mot de passe incorrect.'
+    else errorMessage.value = 'Une erreur est survenue. Réessayez.'
+    captcha.value?.reset()
   } finally {
     pending.value = false
   }
@@ -53,6 +59,8 @@ async function handleSubmit() {
             class="field"
           >
         </div>
+
+        <HCaptcha ref="captcha" v-model="captchaToken" />
 
         <p v-if="errorMessage" class="text-sm text-red-600 dark:text-red-400">{{ errorMessage }}</p>
 

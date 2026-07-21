@@ -7,6 +7,8 @@ const router = useRouter()
 const username = ref('')
 const password = ref('')
 const passwordConfirm = ref('')
+const captchaToken = ref<string | null>(null)
+const captcha = ref<{ reset: () => void } | null>(null)
 const errorMessage = ref('')
 const pending = ref(false)
 
@@ -20,16 +22,19 @@ async function handleSubmit() {
 
   pending.value = true
   try {
-    await register(username.value, password.value)
+    await register(username.value, password.value, captchaToken.value)
     await router.push('/')
   } catch (error: unknown) {
     const status = (error as { response?: { status?: number } })?.response?.status
     if (status === 409) {
       errorMessage.value = 'Ce pseudonyme est déjà utilisé.'
+    } else if (status === 429) {
+      errorMessage.value = 'Trop de tentatives. Réessayez dans quelques minutes.'
     } else {
       const message = (error as { data?: { error?: string } })?.data?.error
       errorMessage.value = status === 400 && message ? message : 'Une erreur est survenue. Réessayez.'
     }
+    captcha.value?.reset()
   } finally {
     pending.value = false
   }
@@ -81,6 +86,8 @@ async function handleSubmit() {
           Aucune adresse email n'est collectée : si tu perds ton mot de passe, le compte ne pourra pas être récupéré.
           Choisis un mot de passe que tu sauras retrouver (gestionnaire de mots de passe recommandé).
         </p>
+
+        <HCaptcha ref="captcha" v-model="captchaToken" />
 
         <p v-if="errorMessage" class="text-sm text-red-600 dark:text-red-400">{{ errorMessage }}</p>
 

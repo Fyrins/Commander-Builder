@@ -29,6 +29,8 @@ jobs:
         run: cd frontend && npx nuxt generate
         env:
           NUXT_PUBLIC_API_BASE: https://api.commanderbuilder.fr/api
+          # Clé de site hCaptcha (publique) — définir la variable de dépôt HCAPTCHA_SITE_KEY
+          NUXT_PUBLIC_HCAPTCHA_SITE_KEY: ${{ vars.HCAPTCHA_SITE_KEY }}
 
       - name: Upload via FTPS
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
