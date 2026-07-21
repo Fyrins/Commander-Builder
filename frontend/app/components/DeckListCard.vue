@@ -24,7 +24,7 @@ defineEmits<{ select: [slug: string] }>()
 
 <template>
   <div
-    class="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200 p-3 transition-colors hover:border-slate-400 dark:border-slate-800 dark:hover:border-slate-600"
+    class="flex cursor-pointer items-start gap-3 panel p-3 transition-colors hover:hairline-strong  dark:hover:hairline-strong"
     role="button"
     tabindex="0"
     @click="$emit('select', deck.slug)"
@@ -42,13 +42,13 @@ defineEmits<{ select: [slug: string] }>()
 
       <ProgressBar :percent="deck.percent" />
 
-      <p class="text-xs text-slate-500 dark:text-slate-400">{{ deck.ownedCount }}/{{ deck.total }} cartes</p>
+      <p class="text-xs text-muted">{{ deck.ownedCount }}/{{ deck.total }} cartes</p>
 
-      <p class="text-xs text-slate-600 dark:text-slate-300">
+      <p class="text-xs text-muted">
         Budget pour compléter : <span class="font-medium">{{ formatEur(deck.missingBudget.toFixed(2)) }}</span>
       </p>
 
-      <p v-if="deck.numDecks !== null" class="text-xs text-slate-400 dark:text-slate-500">
+      <p v-if="deck.numDecks !== null" class="text-xs text-muted">
         {{ deck.numDecks.toLocaleString('fr-FR') }} decks sur EDHREC
       </p>
     </div>

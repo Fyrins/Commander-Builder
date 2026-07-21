@@ -40,12 +40,12 @@ const total = computed(() => basics.value.reduce((sum, b) => sum + b.quantity, 0
 </script>
 
 <template>
-  <div v-if="basics.length > 0" class="rounded-lg border border-slate-200 px-4 py-3 dark:border-slate-800">
-    <p class="mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+  <div v-if="basics.length > 0" class="panel px-4 py-3 ">
+    <p class="mb-2 text-sm font-medium text-muted">
       Terrains de base à prévoir ({{ total }}) — considérés comme déjà possédés
     </p>
     <ul class="flex flex-wrap gap-x-5 gap-y-1.5">
-      <li v-for="basic in basics" :key="basic.label" class="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
+      <li v-for="basic in basics" :key="basic.label" class="flex items-center gap-1.5 text-sm text-muted">
         <ManaSymbol :code="basic.symbol" />
         <span>{{ basic.quantity }} × {{ basic.label }}</span>
       </li>
