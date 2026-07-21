@@ -4,7 +4,7 @@
  */
 export interface AuthUser {
   id: number
-  email: string
+  username: string
 }
 
 export function useAuth() {
@@ -28,24 +28,24 @@ export function useAuth() {
     }
   }
 
-  async function login(email: string, password: string): Promise<void> {
+  async function login(username: string, password: string): Promise<void> {
     await $fetch('/api/login', {
       method: 'POST',
       credentials: 'include',
-      body: { email, password },
+      body: { username, password },
     })
     // L'état de l'utilisateur précédent ne doit jamais survivre au changement de session
     store.reset()
     await fetchMe()
   }
 
-  async function register(email: string, password: string): Promise<void> {
+  async function register(username: string, password: string): Promise<void> {
     await $fetch('/api/register', {
       method: 'POST',
       credentials: 'include',
-      body: { email, password },
+      body: { username, password },
     })
-    await login(email, password)
+    await login(username, password)
   }
 
   async function logout(): Promise<void> {
