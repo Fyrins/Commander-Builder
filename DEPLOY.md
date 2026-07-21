@@ -24,6 +24,7 @@
    APP_SECRET=<64 hex aléatoires>
    DATABASE_URL="mysql://USER:PASS@127.0.0.1:3306/BASE?serverVersion=10.11.0-MariaDB&charset=utf8mb4"
    CORS_ALLOW_ORIGIN='^https://commanderbuilder\.fr$'
+   JWT_COOKIE_SECURE=true
    EOF
    composer install --no-dev --optimize-autoloader
    php bin/console lexik:jwt:generate-keypair --skip-if-exists
@@ -31,7 +32,7 @@
    php bin/console cache:clear && php bin/console cache:warmup
    ```
    Note : ajuster `serverVersion` à la version MySQL/MariaDB réelle d'O2Switch (`SELECT VERSION();`).
-5. **Cookie sécurisé** : vérifier que `secure` est actif en prod pour le cookie `auth_token` (voir `config/packages/lexik_jwt_authentication.yaml` — doit être piloté par l'environnement, `true` en prod). ⚠️ À ce jour la valeur locale est `false` : à rendre conditionnelle avant la mise en ligne.
+5. **Cookie sécurisé** : piloté par `JWT_COOKIE_SECURE` (défaut `false` en dev, `true` posé dans le `.env.local` de prod ci-dessus). Rien d'autre à faire.
 6. **Smoke test** : les jobs `smoke-test` des workflows valident automatiquement homepage, manifest PWA, HTTPS et protection des endpoints.
 
 ## Déploiements suivants

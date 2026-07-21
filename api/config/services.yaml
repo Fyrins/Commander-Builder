@@ -29,7 +29,7 @@ services:
     App\EventListener\JWTAuthenticationSuccessListener:
         arguments:
             $tokenTtl: 14400  # cookie aligné sur la durée de vie du JWT (4h)
-            $secureCookie: false  # dev local en http://
+            $secureCookie: '%env(bool:JWT_COOKIE_SECURE)%'  # false en dev local (http), true en prod
         tags:
             - { name: kernel.event_listener, event: lexik_jwt_authentication.on_authentication_success, method: onAuthenticationSuccess }
 
