@@ -13,7 +13,7 @@ defineProps<{ small?: string | null; normal?: string | null; alt: string }>()
     >
     <span
       v-else
-      class="flex h-14 w-10 items-center justify-center rounded bg-slate-200 text-[10px] text-slate-400 dark:bg-slate-800"
+      class="flex h-14 w-10 items-center justify-center rounded surface-alt text-[10px] text-muted "
     >
       —
     </span>

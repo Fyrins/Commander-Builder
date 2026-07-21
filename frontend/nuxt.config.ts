@@ -48,8 +48,8 @@ export default defineNuxtConfig({
       short_name: 'Commander Builder',
       description:
         'Importez votre collection Magic, découvrez vos commandants jouables et complétez vos decks Commander.',
-      theme_color: '#0f172a',
-      background_color: '#0f172a',
+      theme_color: '#0f0c08',
+      background_color: '#0f0c08',
       display: 'standalone',
       icons: [{ src: 'icons/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }],
     },
