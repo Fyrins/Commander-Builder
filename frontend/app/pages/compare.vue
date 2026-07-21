@@ -85,6 +85,21 @@ function thumbnailFor(name: string) {
   return store.lookup.value.byName(name)
 }
 
+// Récupère l'édition la moins chère pour chaque carte manquante résoluble,
+// afin de chiffrer la complétion au prix le plus bas plutôt qu'à l'édition
+// de la decklist.
+watch(
+  () => result.value?.missing,
+  async (missing) => {
+    if (!missing?.length) return
+    const oracleIds = missing
+      .map((item) => thumbnailFor(item.name)?.oracleId)
+      .filter((id): id is string => Boolean(id))
+    await store.fetchCheapest(oracleIds)
+  },
+  { immediate: true },
+)
+
 interface MissingWithPrice {
   name: string
   needed: number
@@ -92,16 +107,27 @@ interface MissingWithPrice {
   missingQty: number
   unitPrice: string | null | undefined
   subtotal: number | null
+  cheapestSet: string | null
 }
 
 const missingWithPrices = computed<MissingWithPrice[]>(() => {
   if (!result.value) return []
   return result.value.missing.map((item) => {
     const card = thumbnailFor(item.name)
+    const cheapest = store.cheapestFor(card?.oracleId)
     const missingQty = item.needed - item.owned
-    const unitPrice = card?.priceEur
+    // Prix le plus bas toutes éditions ; repli sur l'édition résolue si inconnu.
+    const unitPrice = cheapest?.priceEur ?? card?.priceEur
     const subtotal = unitPrice ? Number(unitPrice) * missingQty : null
-    return { name: item.name, needed: item.needed, owned: item.owned, missingQty, unitPrice, subtotal }
+    return {
+      name: item.name,
+      needed: item.needed,
+      owned: item.owned,
+      missingQty,
+      unitPrice,
+      subtotal,
+      cheapestSet: cheapest?.setCode ?? null,
+    }
   })
 })
 
@@ -213,7 +239,7 @@ function openCardDetail(name: string): void {
         <div class="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <h2 class="text-lg font-semibold">Cartes manquantes</h2>
           <p class="text-sm text-muted">
-            Coût estimé des manquantes :
+            Coût au meilleur prix :
             <span class="font-semibold text-strong">{{ formatEur(estimatedCost.total.toFixed(2)) }}</span>
             <span v-if="estimatedCost.withoutPrice > 0" class="ml-1 text-xs text-muted">
               ({{ estimatedCost.withoutPrice }} carte{{ estimatedCost.withoutPrice > 1 ? 's' : '' }} sans prix)
@@ -237,7 +263,10 @@ function openCardDetail(name: string): void {
               <p class="text-xs text-muted">{{ item.owned }}/{{ item.needed }} possédée(s)</p>
             </div>
             <div class="text-right text-xs text-muted">
-              <p>{{ formatEur(item.unitPrice) }} / u.</p>
+              <p>
+                {{ formatEur(item.unitPrice) }} / u.
+                <span v-if="item.cheapestSet" class="uppercase text-gold">· {{ item.cheapestSet }}</span>
+              </p>
               <p class="font-medium text-muted">
                 {{ item.subtotal !== null ? formatEur(item.subtotal.toFixed(2)) : '—' }}
               </p>

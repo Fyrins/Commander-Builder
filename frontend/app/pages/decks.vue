@@ -445,8 +445,15 @@ function thumbnailFor(name: string) {
   return store.lookup.value.byName(name)
 }
 
+/** Prix le plus bas (toutes éditions) pour la carte, avec repli sur l'édition résolue. */
 function priceFor(name: string): string | null | undefined {
-  return thumbnailFor(name)?.priceEur
+  const card = thumbnailFor(name)
+  return store.cheapestFor(card?.oracleId)?.priceEur ?? card?.priceEur
+}
+
+/** Édition la moins chère (set) pour la carte, si connue. */
+function cheapestSetFor(name: string): string | null {
+  return store.cheapestFor(thumbnailFor(name)?.oracleId)?.setCode ?? null
 }
 
 /** Taux d'inclusion (max toutes catégories confondues) par nom de carte, tel qu'affiché sur la page
@@ -480,6 +487,21 @@ const averageScore = computed(() => {
 })
 
 const completion = computed(() => averageScore.value?.percent ?? 0)
+
+// Récupère l'édition la moins chère des cartes manquantes pour chiffrer le
+// budget au prix le plus bas (cache serveur partagé par oracle_id).
+watch(
+  () => averageScore.value?.missing,
+  async (missing) => {
+    if (!missing?.length) return
+    const oracleIds = missing
+      .filter((card) => card.needed - card.owned > 0)
+      .map((card) => thumbnailFor(card.name)?.oracleId)
+      .filter((id): id is string => Boolean(id))
+    await store.fetchCheapest(oracleIds)
+  },
+  { immediate: true },
+)
 
 /** Quantité de terrains de base du deck moyen (auto-possédés, inclus dans ownedCount). */
 const basicsOwnedCount = computed(() =>
@@ -583,7 +605,7 @@ function openCardDetail(name: string): void {
                 {{ averageScore?.ownedCount ?? 0 }} / {{ averageScore?.total ?? 0 }} cartes du vrai deck moyen EDHREC déjà possédées<template v-if="basicsOwnedCount > 0">, dont {{ basicsOwnedCount }} terrains de base considérés possédés</template>.
               </p>
               <p class="mt-1 text-sm text-muted">
-                Budget pour le compléter :
+                Budget au meilleur prix :
                 <span class="font-semibold text-strong">{{ formatEur(budgetToComplete.total.toFixed(2)) }}</span>
                 <span v-if="budgetToComplete.commanderCost !== null" class="ml-1 text-xs text-muted">
                   (dont commandant : {{ formatEur(budgetToComplete.commanderCost.toFixed(2)) }})
@@ -623,7 +645,10 @@ function openCardDetail(name: string): void {
                 <span v-if="card.isCommander" class="text-xs font-medium text-muted">Commandant</span>
                 <span v-else-if="card.inclusion !== null" class="text-xs text-muted">{{ Math.round(card.inclusion * 1000) / 10 }}% des decks</span>
                 <span v-else class="text-xs text-muted">—</span>
-                <span class="text-right text-xs font-medium text-muted">{{ formatEur(priceFor(card.name)) }}</span>
+                <span class="text-right text-xs font-medium text-muted">
+                  {{ formatEur(priceFor(card.name)) }}
+                  <span v-if="cheapestSetFor(card.name)" class="uppercase text-gold">· {{ cheapestSetFor(card.name) }}</span>
+                </span>
               </li>
             </ul>
           </div>
