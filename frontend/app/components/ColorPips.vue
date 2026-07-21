@@ -1,23 +1,35 @@
 <script setup lang="ts">
-defineProps<{ colors: string[] }>()
+/**
+ * Identité de couleur affichée avec les vraies icônes de mana (SVG Scryfall
+ * via ManaSymbol, fallback disque BEM). Ordre canonique WUBRG ; identité
+ * vide = incolore ({C}).
+ */
+const props = defineProps<{ colors: string[] }>()
 
-const COLOR_VARS: Record<string, string> = {
-  W: 'var(--mtg-white)',
-  U: 'var(--mtg-blue)',
-  B: 'var(--mtg-black)',
-  R: 'var(--mtg-red)',
-  G: 'var(--mtg-green)',
+const CANONICAL_ORDER = ['W', 'U', 'B', 'R', 'G']
+
+const ordered = computed(() => {
+  if (props.colors.length === 0) return ['C']
+  return [...props.colors].sort((a, b) => CANONICAL_ORDER.indexOf(a) - CANONICAL_ORDER.indexOf(b))
+})
+
+const LABELS: Record<string, string> = {
+  W: 'Blanc',
+  U: 'Bleu',
+  B: 'Noir',
+  R: 'Rouge',
+  G: 'Vert',
+  C: 'Incolore',
 }
 </script>
 
 <template>
-  <span class="inline-flex items-center gap-1">
-    <span
-      v-for="color in colors.length ? colors : ['C']"
+  <span class="inline-flex items-center gap-0.5">
+    <ManaSymbol
+      v-for="color in ordered"
       :key="color"
-      class="h-3.5 w-3.5 rounded-full border border-black/20 dark:border-white/30"
-      :style="{ backgroundColor: COLOR_VARS[color] ?? '#94a3b8' }"
-      :title="color === 'C' ? 'Incolore' : color"
+      :code="color"
+      :title="LABELS[color] ?? color"
     />
   </span>
 </template>
