@@ -4,7 +4,7 @@ definePageMeta({ layout: false })
 const { login } = useAuth()
 const router = useRouter()
 
-const email = ref('')
+const username = ref('')
 const password = ref('')
 const errorMessage = ref('')
 const pending = ref(false)
@@ -13,11 +13,11 @@ async function handleSubmit() {
   errorMessage.value = ''
   pending.value = true
   try {
-    await login(email.value, password.value)
+    await login(username.value, password.value)
     await router.push('/')
   } catch (error: unknown) {
     const status = (error as { response?: { status?: number } })?.response?.status
-    errorMessage.value = status === 401 ? 'Email ou mot de passe incorrect.' : 'Une erreur est survenue. Réessayez.'
+    errorMessage.value = status === 401 ? 'Pseudonyme ou mot de passe incorrect.' : 'Une erreur est survenue. Réessayez.'
   } finally {
     pending.value = false
   }
@@ -32,13 +32,13 @@ async function handleSubmit() {
 
       <form class="space-y-4" @submit.prevent="handleSubmit">
         <div>
-          <label for="email" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Email</label>
+          <label for="username" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Pseudonyme</label>
           <input
-            id="email"
-            v-model="email"
-            type="email"
+            id="username"
+            v-model="username"
+            type="text"
             required
-            autocomplete="email"
+            autocomplete="username"
             class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
           >
         </div>
