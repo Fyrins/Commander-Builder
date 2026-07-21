@@ -22,13 +22,13 @@ class LoginFailureHandler implements AuthenticationFailureHandlerInterface
     {
         if ($exception instanceof TooManyLoginAttemptsAuthenticationException) {
             return new JsonResponse(
-                ['code' => Response::HTTP_TOO_MANY_REQUESTS, 'message' => 'Trop de tentatives de connexion. Réessayez dans une minute.'],
+                ['error' => 'Trop de tentatives de connexion. Réessayez dans une minute.'],
                 Response::HTTP_TOO_MANY_REQUESTS,
             );
         }
 
         return new JsonResponse(
-            ['code' => Response::HTTP_UNAUTHORIZED, 'message' => 'Pseudonyme ou mot de passe incorrect.'],
+            ['error' => 'Pseudonyme ou mot de passe incorrect.'],
             Response::HTTP_UNAUTHORIZED,
         );
     }

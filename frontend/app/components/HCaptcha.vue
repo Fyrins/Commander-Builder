@@ -35,7 +35,12 @@ function loadScript(): Promise<void> {
     script.src = SCRIPT_SRC
     script.async = true
     script.defer = true
-    script.onerror = () => reject(new Error('Échec du chargement de hCaptcha'))
+    script.onerror = () => {
+      // Ne pas mémoriser une promesse rejetée : un prochain montage doit pouvoir retenter le chargement.
+      loadPromise = null
+      script.remove()
+      reject(new Error('Échec du chargement de hCaptcha'))
+    }
     document.head.appendChild(script)
   })
   return loadPromise

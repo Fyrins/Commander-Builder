@@ -18,7 +18,9 @@ Le compte FTP est chrooté sur `~/commanderbuilder` — tous les chemins des wor
 
 Protège l'inscription et la connexion (actif en production uniquement). Créer une paire de clés sur hcaptcha.com pour le domaine `commanderbuilder.fr`, puis :
 - Front : variable de dépôt GitHub `HCAPTCHA_SITE_KEY` (clé de site, publique).
-- API : `HCAPTCHA_SECRET` dans le `.env.local` de prod (clé secrète). Sans cette clé réelle, la vérification échouera en prod (les clés de test ne valident que les tokens de test).
+- API : `HCAPTCHA_SECRET` dans le `.env.local` de prod (clé secrète).
+
+⚠️ Les deux clés doivent être **réelles et appariées**. Si l'on laisse les clés de test en production, le widget accepte tout le monde (les clés de test valident n'importe quel token) : la protection est alors inopérante. Le couple site/secret réel doit provenir du même compte hCaptcha.
 
 ## Premier déploiement — étapes manuelles cPanel (une seule fois)
 

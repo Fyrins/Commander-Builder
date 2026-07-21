@@ -133,8 +133,8 @@ async function handleDelete(deck: ApiDeck) {
             <span class="w-20 shrink-0 text-xs text-muted">Incolore</span>
             <div class="h-2 flex-1 overflow-hidden rounded-full surface-alt">
               <div
-                class="h-full rounded-full surface-alt transition-all duration-300"
-                :style="{ width: `${(colorBreakdown.colorless / maxBucketValue) * 100}%` }"
+                class="h-full rounded-full transition-all duration-300"
+                :style="{ width: `${(colorBreakdown.colorless / maxBucketValue) * 100}%`, backgroundColor: 'var(--ink-text-muted)' }"
               />
             </div>
             <span class="w-10 shrink-0 text-right text-xs text-muted">{{ colorBreakdown.colorless }}</span>

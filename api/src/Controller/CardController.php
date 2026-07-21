@@ -194,11 +194,13 @@ class CardController extends AbstractController
      */
     private function applyScryfallData(Card $card, array $scryfallCard): void
     {
-        $card->setScryfallId((string) $scryfallCard['id']);
+        $scryfallId = (string) $scryfallCard['id'];
+        $card->setScryfallId($scryfallId);
 
         $faces = $scryfallCard['card_faces'] ?? null;
         $firstFace = is_array($faces) && isset($faces[0]) ? $faces[0] : null;
 
+        // Repli sur le scryfallId si la carte n'expose pas d'oracle_id (rare)
         $oracleId = $scryfallCard['oracle_id'] ?? ($firstFace['oracle_id'] ?? $scryfallId);
         $card->setOracleId((string) $oracleId);
 
