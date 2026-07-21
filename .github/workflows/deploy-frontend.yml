@@ -1,6 +1,5 @@
 name: Deploy Frontend
 
-# URLs de prod à définir dans Settings → Variables : FRONTEND_URL, API_URL
 on:
   push:
     branches: [main]
@@ -29,17 +28,17 @@ jobs:
       - name: Build
         run: cd frontend && npx nuxt generate
         env:
-          NUXT_PUBLIC_API_BASE: ${{ vars.API_URL }}/api
+          NUXT_PUBLIC_API_BASE: https://api.commanderbuilder.fr/api
 
       - name: Upload via FTPS
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.O2SWITCH_HOST }}
-          username: ${{ secrets.O2SWITCH_USER }}
-          password: ${{ secrets.O2SWITCH_PASSWORD }}
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftps
           local-dir: ./frontend/.output/public/
-          server-dir: ${{ secrets.O2SWITCH_FRONTEND_PATH }}
+          server-dir: ${{ vars.FRONTEND_DIR || './public_html/' }}
 
   smoke-test:
     needs: deploy
@@ -51,7 +50,7 @@ jobs:
       - name: Smoke tests frontend
         run: |
           set -e
-          URL="${{ vars.FRONTEND_URL }}"
+          URL="https://commanderbuilder.fr"
 
           echo "=== Test 1: page d'accueil accessible (retry O2Switch restart) ==="
           STATUS=""
@@ -64,7 +63,7 @@ jobs:
           [ "$STATUS" = "200" ] || { echo "FAIL: homepage non-200 après 8 tentatives"; exit 1; }
 
           echo "=== Test 2: HTTPS forcé ==="
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L "${URL/https:/http:}/")
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L "http://commanderbuilder.fr/")
           [ "$STATUS" = "200" ] || { echo "FAIL"; exit 1; }
 
           echo "=== Test 3: manifest PWA accessible ==="
