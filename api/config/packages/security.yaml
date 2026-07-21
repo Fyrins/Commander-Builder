@@ -18,11 +18,15 @@ security:
         login:
             pattern: ^/api/login
             stateless: true
+            # Anti-brute-force : 5 tentatives échouées / minute, puis blocage progressif
+            login_throttling:
+                max_attempts: 5
+                interval: '1 minute'
             json_login:
                 check_path: /api/login
                 username_path: username
                 success_handler: lexik_jwt_authentication.handler.authentication_success
-                failure_handler: lexik_jwt_authentication.handler.authentication_failure
+                failure_handler: App\Security\LoginFailureHandler
         api:
             pattern: ^/api
             stateless: true

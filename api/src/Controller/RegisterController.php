@@ -9,12 +9,19 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\RateLimiter\RateLimiterFactory;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class RegisterController extends AbstractController
 {
+    public function __construct(
+        private readonly RateLimiterFactory $registrationLimiter,
+        private readonly string $environment,
+    ) {
+    }
+
     #[Route('/api/register', name: 'api_register', methods: ['POST'])]
     public function __invoke(
         Request $request,
@@ -23,6 +30,16 @@ class RegisterController extends AbstractController
         UserRepository $userRepository,
         ValidatorInterface $validator,
     ): JsonResponse {
+        // Anti-spam d'inscriptions : limite par IP en production (voir
+        // config/packages/rate_limiter.yaml). Désactivé hors prod pour ne pas
+        // gêner les tests d'intégration qui créent un compte à chaque exécution.
+        if ($this->environment === 'prod') {
+            $limiter = $this->registrationLimiter->create($request->getClientIp() ?? 'unknown');
+            if (!$limiter->consume(1)->isAccepted()) {
+                return new JsonResponse(['error' => 'Trop de tentatives. Réessayez dans quelques minutes.'], 429);
+            }
+        }
+
         $payload = json_decode($request->getContent(), true);
 
         if (!is_array($payload)) {
