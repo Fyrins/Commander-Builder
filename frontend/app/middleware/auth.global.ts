@@ -11,7 +11,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
     await fetchMe()
   }
 
-  const isPublic = PUBLIC_ROUTES.has(to.path)
+  // Normaliser le slash final : en build statique, les routes sont `/register/`
+  const path = to.path.replace(/\/+$/, '') || '/'
+  const isPublic = PUBLIC_ROUTES.has(path)
 
   if (!user.value && !isPublic) {
     return navigateTo('/login')
