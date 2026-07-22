@@ -4,9 +4,11 @@ definePageMeta({ layout: false })
 const { register } = useAuth()
 const router = useRouter()
 
-const email = ref('')
+const username = ref('')
 const password = ref('')
 const passwordConfirm = ref('')
+const captchaToken = ref<string | null>(null)
+const captcha = ref<{ reset: () => void } | null>(null)
 const errorMessage = ref('')
 const pending = ref(false)
 
@@ -20,11 +22,19 @@ async function handleSubmit() {
 
   pending.value = true
   try {
-    await register(email.value, password.value)
+    await register(username.value, password.value, captchaToken.value)
     await router.push('/')
   } catch (error: unknown) {
     const status = (error as { response?: { status?: number } })?.response?.status
-    errorMessage.value = status === 409 ? 'Cet email est déjà utilisé.' : 'Une erreur est survenue. Réessayez.'
+    if (status === 409) {
+      errorMessage.value = 'Ce pseudonyme est déjà utilisé.'
+    } else if (status === 429) {
+      errorMessage.value = 'Trop de tentatives. Réessayez dans quelques minutes.'
+    } else {
+      const message = (error as { data?: { error?: string } })?.data?.error
+      errorMessage.value = status === 400 && message ? message : 'Une erreur est survenue. Réessayez.'
+    }
+    captcha.value?.reset()
   } finally {
     pending.value = false
   }
@@ -32,45 +42,52 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div class="flex min-h-screen items-center justify-center bg-slate-50 px-4 dark:bg-slate-950">
-    <div class="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <h1 class="mb-1 text-xl font-semibold text-slate-900 dark:text-white">Créer un compte</h1>
-      <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">Gérez votre collection et vos decks Commander.</p>
+  <div class="flex min-h-screen items-center justify-center surface-alt px-4 ">
+    <div class="w-full max-w-sm panel p-8 shadow-sm  ">
+      <h1 class="mb-1 text-xl font-semibold text-strong">Créer un compte</h1>
+      <p class="mb-6 text-sm text-muted">Gérez votre collection et vos decks Commander.</p>
 
       <form class="space-y-4" @submit.prevent="handleSubmit">
         <div>
-          <label for="email" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Email</label>
+          <label for="username" class="mb-1 block text-sm font-medium text-muted">Pseudonyme</label>
           <input
-            id="email"
-            v-model="email"
-            type="email"
+            id="username"
+            v-model="username"
+            type="text"
             required
-            autocomplete="email"
-            class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            autocomplete="username"
+            class="field"
           >
         </div>
         <div>
-          <label for="password" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Mot de passe</label>
+          <label for="password" class="mb-1 block text-sm font-medium text-muted">Mot de passe</label>
           <input
             id="password"
             v-model="password"
             type="password"
             required
             autocomplete="new-password"
-            class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            class="field"
           >
         </div>
         <div>
-          <label for="passwordConfirm" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Confirmer le mot de passe</label>
+          <label for="passwordConfirm" class="mb-1 block text-sm font-medium text-muted">Confirmer le mot de passe</label>
           <input
             id="passwordConfirm"
             v-model="passwordConfirm"
             type="password"
             required
             autocomplete="new-password"
-            class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            class="field"
           >
         </div>
+
+        <p class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+          Aucune adresse email n'est collectée : si tu perds ton mot de passe, le compte ne pourra pas être récupéré.
+          Choisis un mot de passe que tu sauras retrouver (gestionnaire de mots de passe recommandé).
+        </p>
+
+        <HCaptcha ref="captcha" v-model="captchaToken" />
 
         <p v-if="errorMessage" class="text-sm text-red-600 dark:text-red-400">{{ errorMessage }}</p>
 
@@ -83,9 +100,9 @@ async function handleSubmit() {
         </button>
       </form>
 
-      <p class="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
+      <p class="mt-6 text-center text-sm text-muted">
         Déjà un compte ?
-        <NuxtLink to="/login" class="font-medium text-slate-900 underline dark:text-white">Se connecter</NuxtLink>
+        <NuxtLink to="/login" class="font-medium text-strong underline ">Se connecter</NuxtLink>
       </p>
     </div>
   </div>

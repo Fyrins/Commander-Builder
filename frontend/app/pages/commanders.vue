@@ -10,13 +10,6 @@ onMounted(() => {
 
 const COLOR_ORDER = ['W', 'U', 'B', 'R', 'G'] as const
 const COLOR_LABELS: Record<string, string> = { W: 'Blanc', U: 'Bleu', B: 'Noir', R: 'Rouge', G: 'Vert' }
-const COLOR_VARS: Record<string, string> = {
-  W: 'var(--mtg-white)',
-  U: 'var(--mtg-blue)',
-  B: 'var(--mtg-black)',
-  R: 'var(--mtg-red)',
-  G: 'var(--mtg-green)',
-}
 
 const commanders = computed(() => detectCommanders(store.poolCards.value))
 
@@ -33,10 +26,14 @@ function resetColors() {
   selectedColors.value = new Set()
 }
 
+// Sémantique « couleurs disponibles » : on affiche les commandants dont
+// l'identité de couleur tient dans les couleurs cochées (incluses ou moins).
+// Les commandants incolores restent visibles (identité vide ⊆ tout).
 const filteredCommanders = computed(() => {
   if (selectedColors.value.size === 0) return commanders.value
-  const wanted = Array.from(selectedColors.value)
-  return commanders.value.filter((card) => wanted.every((color) => card.colorIdentity.includes(color)))
+  return commanders.value.filter((card) =>
+    card.colorIdentity.every((color) => selectedColors.value.has(color)),
+  )
 })
 </script>
 
@@ -44,24 +41,27 @@ const filteredCommanders = computed(() => {
   <div class="space-y-6">
     <div>
       <h1 class="mb-1 text-2xl font-semibold">Mes commandants</h1>
-      <p class="text-sm text-slate-500 dark:text-slate-400">
+      <p class="text-sm text-muted">
         Cartes légales comme commandant, réellement présentes dans votre pool (collection + decks inclus).
       </p>
     </div>
 
     <div class="flex flex-wrap items-center gap-2">
-      <span class="text-sm text-slate-500 dark:text-slate-400">Filtrer par couleur :</span>
+      <span class="text-sm text-muted">Filtrer par couleur :</span>
       <button
         v-for="color in COLOR_ORDER"
         :key="color"
         type="button"
-        class="h-7 w-7 rounded-full border-2 transition"
-        :class="selectedColors.has(color) ? 'border-slate-900 dark:border-white' : 'border-transparent opacity-50 hover:opacity-80'"
-        :style="{ backgroundColor: COLOR_VARS[color] }"
-        :aria-pressed="selectedColors.has(color)"
+        role="checkbox"
+        class="mana-filter text-2xl leading-none transition"
+        :class="selectedColors.has(color) ? 'mana-filter--on' : 'mana-filter--off'"
+        :aria-checked="selectedColors.has(color)"
+        :aria-label="COLOR_LABELS[color]"
         :title="COLOR_LABELS[color]"
         @click="toggleColor(color)"
-      />
+      >
+        <ManaSymbol :code="color" />
+      </button>
       <button
         v-if="selectedColors.size"
         type="button"
@@ -72,10 +72,10 @@ const filteredCommanders = computed(() => {
       </button>
     </div>
 
-    <p v-if="commanders.length === 0" class="text-sm text-slate-500 dark:text-slate-400">
+    <p v-if="commanders.length === 0" class="text-sm text-muted">
       Aucun commandant détecté dans votre pool pour l'instant.
     </p>
-    <p v-else-if="filteredCommanders.length === 0" class="text-sm text-slate-500 dark:text-slate-400">
+    <p v-else-if="filteredCommanders.length === 0" class="text-sm text-muted">
       Aucun commandant ne correspond à ce filtre de couleurs.
     </p>
 
@@ -84,7 +84,7 @@ const filteredCommanders = computed(() => {
         v-for="card in filteredCommanders"
         :key="card.oracleId"
         :to="{ path: '/decks', query: { commander: edhrecSlug(card.name) } }"
-        class="group rounded-xl border border-slate-200 p-2 transition hover:border-slate-400 dark:border-slate-800 dark:hover:border-slate-600"
+        class="group panel p-2 transition hover:hairline-strong  dark:hover:hairline-strong"
       >
         <img v-if="card.imageNormal" :src="card.imageNormal" :alt="card.name" loading="lazy" class="mb-2 w-full rounded-lg">
         <p class="truncate text-sm font-medium" :title="card.printedName ?? card.name">{{ card.printedName ?? card.name }}</p>

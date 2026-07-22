@@ -21,20 +21,21 @@ async function handleLogout() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
-    <header class="border-b border-slate-200 dark:border-slate-800">
+  <div class="min-h-screen">
+    <header class="header">
       <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-3">
         <div class="flex flex-wrap items-center gap-6">
-          <NuxtLink to="/" class="text-lg font-semibold tracking-tight">
-            MTG Commander Builder
+          <NuxtLink to="/" class="flex items-center gap-2.5">
+            <AppSigil class="h-7 w-7 shrink-0" />
+            <span class="brand">Commander Builder</span>
           </NuxtLink>
           <nav class="flex flex-wrap gap-1">
             <NuxtLink
               v-for="item in navItems"
               :key="item.to"
               :to="item.to"
-              class="rounded-md px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-200/60 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
-              active-class="!bg-slate-900 !text-white dark:!bg-slate-100 dark:!text-slate-900"
+              class="nav-link"
+              active-class="nav-link--active"
             >
               {{ item.label }}
             </NuxtLink>
@@ -57,7 +58,7 @@ async function handleLogout() {
             </svg>
           </button>
 
-          <span v-if="user" class="hidden text-sm text-slate-500 sm:inline dark:text-slate-400">{{ user.email }}</span>
+          <span v-if="user" class="hidden text-sm sm:inline" style="color: var(--ink-text-muted)">{{ user.username }}</span>
           <button
             v-if="user"
             type="button"
@@ -73,5 +74,64 @@ async function handleLogout() {
     <main class="mx-auto max-w-6xl px-4 py-6">
       <slot />
     </main>
+
+    <footer class="footer mx-auto max-w-6xl px-4 py-8 text-center">
+      <p class="footer__legal">
+        Commander Builder is unofficial Fan Content permitted under the Fan Content Policy. Not
+        approved/endorsed by Wizards. Portions of the materials used are property of Wizards of
+        the Coast. ©Wizards of the Coast LLC.
+      </p>
+      <p class="mt-1 footer__credits">Données cartes et images fournies par Scryfall — statistiques de popularité par EDHREC.</p>
+    </footer>
   </div>
 </template>
+
+<style scoped>
+.header {
+  border-bottom: 1px solid var(--ink-border);
+  background-color: color-mix(in srgb, var(--ink-bg) 82%, transparent);
+  backdrop-filter: blur(8px);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.brand {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.15rem;
+  letter-spacing: 0.02em;
+  color: var(--ink-text);
+}
+
+.nav-link {
+  border-radius: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--ink-text-muted);
+  transition: color 150ms ease-out, background-color 150ms ease-out;
+}
+.nav-link:hover {
+  color: var(--ink-text);
+  background-color: var(--ink-panel-alt);
+}
+.nav-link--active {
+  color: var(--gold);
+  background-color: var(--ink-panel-alt);
+  box-shadow: inset 0 0 0 1px var(--gold-border);
+}
+
+.footer__legal {
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+  color: var(--ink-text-muted);
+  max-width: 46rem;
+  margin-inline: auto;
+}
+.footer__credits {
+  font-size: 0.72rem;
+  color: var(--ink-text-muted);
+  opacity: 0.85;
+}
+</style>

@@ -445,8 +445,15 @@ function thumbnailFor(name: string) {
   return store.lookup.value.byName(name)
 }
 
+/** Prix le plus bas (toutes éditions) pour la carte, avec repli sur l'édition résolue. */
 function priceFor(name: string): string | null | undefined {
-  return thumbnailFor(name)?.priceEur
+  const card = thumbnailFor(name)
+  return store.cheapestFor(card?.oracleId)?.priceEur ?? card?.priceEur
+}
+
+/** Édition la moins chère (set) pour la carte, si connue. */
+function cheapestSetFor(name: string): string | null {
+  return store.cheapestFor(thumbnailFor(name)?.oracleId)?.setCode ?? null
 }
 
 /** Taux d'inclusion (max toutes catégories confondues) par nom de carte, tel qu'affiché sur la page
@@ -480,6 +487,21 @@ const averageScore = computed(() => {
 })
 
 const completion = computed(() => averageScore.value?.percent ?? 0)
+
+// Récupère l'édition la moins chère des cartes manquantes pour chiffrer le
+// budget au prix le plus bas (cache serveur partagé par oracle_id).
+watch(
+  () => averageScore.value?.missing,
+  async (missing) => {
+    if (!missing?.length) return
+    const oracleIds = missing
+      .filter((card) => card.needed - card.owned > 0)
+      .map((card) => thumbnailFor(card.name)?.oracleId)
+      .filter((id): id is string => Boolean(id))
+    await store.fetchCheapest(oracleIds)
+  },
+  { immediate: true },
+)
 
 /** Quantité de terrains de base du deck moyen (auto-possédés, inclus dans ownedCount). */
 const basicsOwnedCount = computed(() =>
@@ -559,36 +581,36 @@ function openCardDetail(name: string): void {
         <ColorPips v-if="commanderCard" :colors="commanderCard.colorIdentity" />
       </div>
 
-      <p v-if="edhrecLoading" class="text-sm text-slate-500 dark:text-slate-400">Chargement des données EDHREC…</p>
+      <p v-if="edhrecLoading" class="text-sm text-muted">Chargement des données EDHREC…</p>
       <p v-if="edhrecError" class="text-sm text-red-600 dark:text-red-400">{{ edhrecError }}</p>
-      <p v-if="averageLoading" class="text-sm text-slate-500 dark:text-slate-400">Chargement du deck moyen…</p>
+      <p v-if="averageLoading" class="text-sm text-muted">Chargement du deck moyen…</p>
       <p v-if="averageError" class="text-sm text-red-600 dark:text-red-400">{{ averageError }}</p>
 
       <template v-if="averageData">
-        <p v-if="averagePricesLoading || pricesLoading" class="text-sm text-slate-500 dark:text-slate-400">Récupération des prix…</p>
+        <p v-if="averagePricesLoading || pricesLoading" class="text-sm text-muted">Récupération des prix…</p>
 
-        <section class="space-y-4 rounded-xl border border-slate-200 p-6 dark:border-slate-800">
+        <section class="space-y-4 panel p-6 ">
           <div class="flex flex-wrap items-center gap-6">
             <div
-              class="relative flex h-28 w-28 items-center justify-center rounded-full"
-              :style="{ background: `conic-gradient(#10b981 ${completion}%, rgba(148,163,184,0.3) ${completion}% 100%)` }"
+              class="ring relative flex h-28 w-28 items-center justify-center"
+              :style="{ '--ring-target': completion }"
             >
-              <div class="absolute inset-2 flex items-center justify-center rounded-full bg-white dark:bg-slate-950">
-                <span class="text-xl font-semibold">{{ completion }}%</span>
+              <div class="absolute inset-2 flex items-center justify-center rounded-full surface">
+                <span class="stat-value text-xl font-semibold">{{ completion }}%</span>
               </div>
             </div>
             <div>
               <p class="font-medium">Complétion du deck moyen</p>
-              <p class="text-sm text-slate-500 dark:text-slate-400">
+              <p class="text-sm text-muted">
                 {{ averageScore?.ownedCount ?? 0 }} / {{ averageScore?.total ?? 0 }} cartes du vrai deck moyen EDHREC déjà possédées<template v-if="basicsOwnedCount > 0">, dont {{ basicsOwnedCount }} terrains de base considérés possédés</template>.
               </p>
-              <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                Budget pour le compléter :
-                <span class="font-semibold text-slate-900 dark:text-white">{{ formatEur(budgetToComplete.total.toFixed(2)) }}</span>
-                <span v-if="budgetToComplete.commanderCost !== null" class="ml-1 text-xs text-slate-400 dark:text-slate-500">
+              <p class="mt-1 text-sm text-muted">
+                Budget au meilleur prix :
+                <span class="font-semibold text-strong">{{ formatEur(budgetToComplete.total.toFixed(2)) }}</span>
+                <span v-if="budgetToComplete.commanderCost !== null" class="ml-1 text-xs text-muted">
                   (dont commandant : {{ formatEur(budgetToComplete.commanderCost.toFixed(2)) }})
                 </span>
-                <span v-if="budgetToComplete.withoutPrice > 0" class="ml-1 text-xs text-slate-400 dark:text-slate-500">
+                <span v-if="budgetToComplete.withoutPrice > 0" class="ml-1 text-xs text-muted">
                   ({{ budgetToComplete.withoutPrice }} carte{{ budgetToComplete.withoutPrice > 1 ? 's' : '' }} sans prix)
                 </span>
               </p>
@@ -596,7 +618,7 @@ function openCardDetail(name: string): void {
                 :href="`https://edhrec.com/average-decks/${selectedSlug}`"
                 target="_blank"
                 rel="noopener"
-                class="mt-1 inline-block text-xs text-slate-400 underline-offset-2 hover:text-slate-600 hover:underline dark:text-slate-500 dark:hover:text-slate-300"
+                class="mt-1 inline-block text-xs text-muted underline-offset-2 hover:text-gold hover:underline"
               >
                 Source : deck moyen sur EDHREC
               </a>
@@ -611,7 +633,7 @@ function openCardDetail(name: string): void {
               <li
                 v-for="card in priorityPurchases"
                 :key="card.name"
-                class="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-800"
+                class="flex items-center gap-3 panel px-3 py-2 "
                 :class="{ 'cursor-pointer': thumbnailFor(card.name) }"
                 :role="thumbnailFor(card.name) ? 'button' : undefined"
                 :tabindex="thumbnailFor(card.name) ? 0 : undefined"
@@ -620,10 +642,13 @@ function openCardDetail(name: string): void {
               >
                 <CardHoverImage :small="thumbnailFor(card.name)?.imageSmall" :normal="thumbnailFor(card.name)?.imageNormal" :alt="card.name" />
                 <span class="flex-1 font-medium">{{ card.name }}</span>
-                <span v-if="card.isCommander" class="text-xs font-medium text-slate-500 dark:text-slate-400">Commandant</span>
-                <span v-else-if="card.inclusion !== null" class="text-xs text-slate-500 dark:text-slate-400">{{ Math.round(card.inclusion * 1000) / 10 }}% des decks</span>
-                <span v-else class="text-xs text-slate-400 dark:text-slate-500">—</span>
-                <span class="text-right text-xs font-medium text-slate-600 dark:text-slate-300">{{ formatEur(priceFor(card.name)) }}</span>
+                <span v-if="card.isCommander" class="text-xs font-medium text-muted">Commandant</span>
+                <span v-else-if="card.inclusion !== null" class="text-xs text-muted">{{ Math.round(card.inclusion * 1000) / 10 }}% des decks</span>
+                <span v-else class="text-xs text-muted">—</span>
+                <span class="text-right text-xs font-medium text-muted">
+                  {{ formatEur(priceFor(card.name)) }}
+                  <span v-if="cheapestSetFor(card.name)" class="uppercase text-gold">· {{ cheapestSetFor(card.name) }}</span>
+                </span>
               </li>
             </ul>
           </div>
@@ -632,15 +657,15 @@ function openCardDetail(name: string): void {
         <DeckStats v-if="averageScore" :entries="averageEntries" :lookup="store.lookup.value" :total="averageScore.total" />
       </template>
 
-      <details v-if="edhrecData" class="rounded-xl border border-slate-200 p-4 dark:border-slate-800">
+      <details v-if="edhrecData" class="panel p-4 ">
         <summary class="cursor-pointer text-lg font-semibold">Recommandations par catégorie</summary>
-        <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+        <p class="mt-2 text-xs text-muted">
           Catalogue EDHREC — sans influence sur la complétion ni le budget ci-dessus.
           <a
             :href="`https://edhrec.com/commanders/${selectedSlug}`"
             target="_blank"
             rel="noopener"
-            class="underline-offset-2 hover:text-slate-700 hover:underline dark:hover:text-slate-300"
+            class="underline-offset-2 hover:text-gold hover:underline"
           >
             Source : page commandant sur EDHREC
           </a>
@@ -652,7 +677,7 @@ function openCardDetail(name: string): void {
             <li
               v-for="card in list.cards"
               :key="card.name"
-              class="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-800"
+              class="flex items-center gap-3 panel px-3 py-2 "
               :class="{ 'cursor-pointer': thumbnailFor(card.name) }"
               :role="thumbnailFor(card.name) ? 'button' : undefined"
               :tabindex="thumbnailFor(card.name) ? 0 : undefined"
@@ -660,8 +685,8 @@ function openCardDetail(name: string): void {
               @keydown.enter="openCardDetail(card.name)"
             >
               <span class="flex-1 truncate" :title="card.name">{{ card.name }}</span>
-              <span class="text-xs text-slate-500 dark:text-slate-400">{{ Math.round(card.inclusion * 1000) / 10 }}%</span>
-              <span v-if="!isOwned(card.name)" class="text-right text-xs font-medium text-slate-600 dark:text-slate-300">
+              <span class="text-xs text-muted">{{ Math.round(card.inclusion * 1000) / 10 }}%</span>
+              <span v-if="!isOwned(card.name)" class="text-right text-xs font-medium text-muted">
                 {{ formatEur(priceFor(card.name)) }}
               </span>
               <span class="badge" :class="isOwned(card.name) ? 'badge--owned' : 'badge--missing'">
@@ -679,7 +704,7 @@ function openCardDetail(name: string): void {
     <template v-else>
       <div>
         <h1 class="mb-1 text-2xl font-semibold">Decks</h1>
-        <p class="text-sm text-slate-500 dark:text-slate-400">
+        <p class="text-sm text-muted">
           Decks moyens EDHREC classés par compatibilité avec votre pool. Cliquez sur un deck pour voir la fiche complète.
         </p>
       </div>
@@ -689,20 +714,20 @@ function openCardDetail(name: string): void {
           v-model="searchTerm"
           type="text"
           placeholder="Rechercher un commandant (anglais de préférence)…"
-          class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+          class="field"
         >
 
-        <p v-if="searchLoading" class="mt-1 text-xs text-slate-500 dark:text-slate-400">Recherche…</p>
-        <p v-else-if="searchError" class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ searchError }}</p>
+        <p v-if="searchLoading" class="mt-1 text-xs text-muted">Recherche…</p>
+        <p v-else-if="searchError" class="mt-1 text-xs text-muted">{{ searchError }}</p>
 
         <ul
           v-if="searchResults.length"
-          class="absolute z-10 mt-1 max-h-72 w-full overflow-y-auto rounded-md border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-800"
+          class="absolute z-10 mt-1 max-h-72 w-full overflow-y-auto rounded-md panel shadow-lg  "
         >
           <li v-for="card in searchResults" :key="card.name">
             <button
               type="button"
-              class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-slate-700"
+              class="flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:surface-alt"
               @click="selectCommanderResult(card)"
             >
               <img
@@ -713,7 +738,7 @@ function openCardDetail(name: string): void {
               >
               <span class="flex-1">
                 <span class="block font-medium">{{ card.name }}</span>
-                <span class="block text-xs text-slate-500 dark:text-slate-400">{{ card.type_line }}</span>
+                <span class="block text-xs text-muted">{{ card.type_line }}</span>
               </span>
             </button>
           </li>
@@ -725,27 +750,27 @@ function openCardDetail(name: string): void {
           v-model="filterText"
           type="text"
           placeholder="Filtrer la liste par nom de commandant…"
-          class="w-full max-w-xs rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+          class="w-full max-w-xs rounded-md field-select px-3 py-2 text-sm text-strong focus:hairline-strong focus:outline-none   "
         >
-        <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-          <input v-model="onlyOwnedCommanders" type="checkbox" class="rounded border-slate-300 dark:border-slate-600">
+        <label class="flex items-center gap-2 text-sm text-muted">
+          <input v-model="onlyOwnedCommanders" type="checkbox" class="rounded hairline-strong">
           Seulement mes commandants
         </label>
       </div>
 
       <div v-if="rankingLoading" class="space-y-2">
-        <p class="text-sm text-slate-500 dark:text-slate-400">
+        <p class="text-sm text-muted">
           Analyse des decks {{ rankingProgress.done }}/{{ rankingProgress.total }}…
         </p>
         <ProgressBar :percent="rankingProgress.total ? (rankingProgress.done / rankingProgress.total) * 100 : 0" />
       </div>
-      <p v-else-if="rankingResolving" class="text-sm text-slate-500 dark:text-slate-400">Résolution des cartes…</p>
+      <p v-else-if="rankingResolving" class="text-sm text-muted">Résolution des cartes…</p>
       <p v-if="rankingError" class="text-sm text-red-600 dark:text-red-400">{{ rankingError }}</p>
 
       <div v-if="rankingState" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <DeckListCard v-for="deck in filteredRanking" :key="deck.slug" :deck="deck" @select="openDeck" />
       </div>
-      <p v-if="rankingState && filteredRanking.length === 0" class="text-sm text-slate-500 dark:text-slate-400">
+      <p v-if="rankingState && filteredRanking.length === 0" class="text-sm text-muted">
         Aucun deck ne correspond à ce filtre.
       </p>
     </template>

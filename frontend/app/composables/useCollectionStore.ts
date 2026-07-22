@@ -46,6 +46,19 @@ interface ResolveResponse {
   debug: { from_cache: number; from_scryfall: number }
 }
 
+export interface CheapestPrinting {
+  oracleId: string
+  priceEur: string | null
+  scryfallId: string | null
+  setCode: string | null
+  collectorNumber: string | null
+}
+
+interface CheapestResponse {
+  prices: Record<string, CheapestPrinting>
+  debug: { from_cache: number; from_scryfall: number }
+}
+
 const CHUNK_SIZE = 300
 
 function toCollectionRow(item: ApiCollectionItem, card: ResolvedCard | undefined): CollectionRow {
@@ -73,6 +86,11 @@ export function useCollectionStore() {
     index: new Map(),
     unresolved: [],
   }))
+
+  // Édition la moins chère (EUR) par oracle_id — cache mutualisé côté serveur,
+  // mémorisé ici pour la session. Sert au calcul du budget de complétion au
+  // prix le plus bas.
+  const cheapestByOracle = useState<Map<string, CheapestPrinting>>('store:cheapestByOracle', () => new Map())
 
   const loading = useState<boolean>('store:loading', () => false)
   const progress = useState<{ done: number; total: number }>('store:progress', () => ({ done: 0, total: 0 }))
@@ -150,6 +168,36 @@ export function useCollectionStore() {
       }
     }
     rebuildLookup()
+  }
+
+  /**
+   * Récupère l'édition la moins chère (EUR) pour une liste d'oracle_id, en ne
+   * demandant que ceux encore inconnus localement (le serveur cache déjà le
+   * reste, partagé entre utilisateurs). Sert au budget de complétion au prix
+   * le plus bas.
+   */
+  async function fetchCheapest(oracleIds: string[]): Promise<void> {
+    const missing = [...new Set(oracleIds)].filter((id) => id && !cheapestByOracle.value.has(id))
+    if (missing.length === 0) return
+
+    const next = new Map(cheapestByOracle.value)
+    for (let i = 0; i < missing.length; i += CHUNK_SIZE) {
+      const chunk = missing.slice(i, i + CHUNK_SIZE)
+      const response = await $fetch<CheapestResponse>('/api/cards/cheapest', {
+        method: 'POST',
+        credentials: 'include',
+        body: { oracleIds: chunk },
+      })
+      for (const [oracleId, printing] of Object.entries(response.prices)) {
+        next.set(oracleId, printing)
+      }
+    }
+    cheapestByOracle.value = next
+  }
+
+  /** Édition la moins chère connue pour un oracle_id (ou undefined si non encore récupérée). */
+  function cheapestFor(oracleId: string | undefined | null): CheapestPrinting | undefined {
+    return oracleId ? cheapestByOracle.value.get(oracleId) : undefined
   }
 
   function collectIdentifiers(collectionItems: ApiCollectionItem[], deckList: ApiDeck[]): ResolveIdentifier[] {
@@ -277,6 +325,7 @@ export function useCollectionStore() {
     lookup.value = createCardLookup([])
     pool.value = []
     oracleIndex.value = { index: new Map(), unresolved: [] }
+    cheapestByOracle.value = new Map()
     progress.value = { done: 0, total: 0 }
     loading.value = false
     loaded.value = false
@@ -302,5 +351,8 @@ export function useCollectionStore() {
     decksForEngine,
     rebuildPool,
     resolveByNames,
+    cheapestByOracle,
+    fetchCheapest,
+    cheapestFor,
   }
 }

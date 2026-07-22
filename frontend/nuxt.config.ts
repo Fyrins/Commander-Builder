@@ -8,7 +8,7 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      title: 'MTG Commander Builder',
+      title: 'Commander Builder',
       htmlAttrs: { lang: 'fr' },
     },
   },
@@ -29,6 +29,9 @@ export default defineNuxtConfig({
     public: {
       // En dev, le devProxy nitro route /api vers Symfony ; en prod, même origine ou domaine API.
       apiBase: '/api',
+      // Clé de site hCaptcha (publique). Défaut = clé de TEST hCaptcha (widget
+      // qui passe toujours) ; surcharger en prod via NUXT_PUBLIC_HCAPTCHA_SITE_KEY.
+      hcaptchaSiteKey: '10000000-ffff-ffff-ffff-000000000001',
     },
   },
 
@@ -44,12 +47,12 @@ export default defineNuxtConfig({
   pwa: {
     registerType: 'autoUpdate',
     manifest: {
-      name: 'MTG Commander Builder',
-      short_name: 'MTG Commander Builder',
+      name: 'Commander Builder',
+      short_name: 'Commander Builder',
       description:
         'Importez votre collection Magic, découvrez vos commandants jouables et complétez vos decks Commander.',
-      theme_color: '#0f172a',
-      background_color: '#0f172a',
+      theme_color: '#0f0c08',
+      background_color: '#0f0c08',
       display: 'standalone',
       icons: [{ src: 'icons/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }],
     },

@@ -85,6 +85,21 @@ function thumbnailFor(name: string) {
   return store.lookup.value.byName(name)
 }
 
+// Récupère l'édition la moins chère pour chaque carte manquante résoluble,
+// afin de chiffrer la complétion au prix le plus bas plutôt qu'à l'édition
+// de la decklist.
+watch(
+  () => result.value?.missing,
+  async (missing) => {
+    if (!missing?.length) return
+    const oracleIds = missing
+      .map((item) => thumbnailFor(item.name)?.oracleId)
+      .filter((id): id is string => Boolean(id))
+    await store.fetchCheapest(oracleIds)
+  },
+  { immediate: true },
+)
+
 interface MissingWithPrice {
   name: string
   needed: number
@@ -92,16 +107,27 @@ interface MissingWithPrice {
   missingQty: number
   unitPrice: string | null | undefined
   subtotal: number | null
+  cheapestSet: string | null
 }
 
 const missingWithPrices = computed<MissingWithPrice[]>(() => {
   if (!result.value) return []
   return result.value.missing.map((item) => {
     const card = thumbnailFor(item.name)
+    const cheapest = store.cheapestFor(card?.oracleId)
     const missingQty = item.needed - item.owned
-    const unitPrice = card?.priceEur
+    // Prix le plus bas toutes éditions ; repli sur l'édition résolue si inconnu.
+    const unitPrice = cheapest?.priceEur ?? card?.priceEur
     const subtotal = unitPrice ? Number(unitPrice) * missingQty : null
-    return { name: item.name, needed: item.needed, owned: item.owned, missingQty, unitPrice, subtotal }
+    return {
+      name: item.name,
+      needed: item.needed,
+      owned: item.owned,
+      missingQty,
+      unitPrice,
+      subtotal,
+      cheapestSet: cheapest?.setCode ?? null,
+    }
   })
 })
 
@@ -128,7 +154,7 @@ function openCardDetail(name: string): void {
   <div class="space-y-6">
     <div>
       <h1 class="mb-1 text-2xl font-semibold">Comparateur</h1>
-      <p class="text-sm text-slate-500 dark:text-slate-400">
+      <p class="text-sm text-muted">
         Vérifiez le taux de complétion d'une decklist par rapport à votre pool (collection + decks inclus).
       </p>
     </div>
@@ -155,14 +181,14 @@ function openCardDetail(name: string): void {
     <div v-if="mode === 'deck'" class="space-y-3">
       <select
         v-model="selectedDeckId"
-        class="w-full max-w-sm rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+        class="field max-w-sm"
       >
         <option :value="null" disabled>Choisir un deck…</option>
         <option v-for="deck in store.decks.value" :key="deck.id" :value="deck.id">{{ deck.name }}</option>
       </select>
 
-      <label v-if="showExcludeToggle" class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-        <input v-model="excludeFromPool" type="checkbox" class="rounded border-slate-400">
+      <label v-if="showExcludeToggle" class="flex items-center gap-2 text-sm text-muted">
+        <input v-model="excludeFromPool" type="checkbox" class="mtg-checkbox">
         Exclure ce deck de mon pool pour la comparaison
       </label>
     </div>
@@ -172,31 +198,31 @@ function openCardDetail(name: string): void {
         v-model="pasteText"
         rows="10"
         placeholder="1 Sol Ring&#10;1 Command Tower&#10;1 Atraxa, Praetors' Voice (C16) 1"
-        class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 font-mono text-xs text-slate-900 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+        class="field font-mono text-xs"
       />
       <ul v-if="pasteErrors.length" class="max-h-32 overflow-y-auto rounded-md bg-red-50 p-3 text-xs text-red-700 dark:bg-red-950/40 dark:text-red-300">
         <li v-for="(err, index) in pasteErrors" :key="index">{{ err }}</li>
       </ul>
     </div>
 
-    <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-      <input v-model="allowOtherEditions" type="checkbox" class="rounded border-slate-400">
+    <label class="flex items-center gap-2 text-sm text-muted">
+      <input v-model="allowOtherEditions" type="checkbox" class="mtg-checkbox">
       Inclure les autres éditions
     </label>
 
-    <section v-if="result" class="space-y-6 rounded-xl border border-slate-200 p-6 dark:border-slate-800">
+    <section v-if="result" class="space-y-6 panel p-6 ">
       <div class="flex flex-wrap items-center gap-6">
         <div
-          class="relative flex h-32 w-32 items-center justify-center rounded-full"
-          :style="{ background: `conic-gradient(#10b981 ${result.percent}%, rgba(148,163,184,0.3) ${result.percent}% 100%)` }"
+          class="ring relative flex h-32 w-32 items-center justify-center"
+          :style="{ '--ring-target': result.percent }"
         >
-          <div class="absolute inset-2 flex items-center justify-center rounded-full bg-white dark:bg-slate-950">
-            <span class="text-2xl font-semibold">{{ result.percent }}%</span>
+          <div class="absolute inset-2 flex items-center justify-center rounded-full surface">
+            <span class="stat-value text-2xl font-semibold">{{ result.percent }}%</span>
           </div>
         </div>
         <div>
           <p class="text-lg font-medium">{{ result.ownedCount }} / {{ result.total }} cartes possédées</p>
-          <p class="text-sm text-slate-500 dark:text-slate-400">Terrains de base considérés comme possédés.</p>
+          <p class="text-sm text-muted">Terrains de base considérés comme possédés.</p>
         </div>
       </div>
 
@@ -212,10 +238,10 @@ function openCardDetail(name: string): void {
       <div v-if="result.missing.length">
         <div class="mb-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <h2 class="text-lg font-semibold">Cartes manquantes</h2>
-          <p class="text-sm text-slate-600 dark:text-slate-300">
-            Coût estimé des manquantes :
-            <span class="font-semibold text-slate-900 dark:text-white">{{ formatEur(estimatedCost.total.toFixed(2)) }}</span>
-            <span v-if="estimatedCost.withoutPrice > 0" class="ml-1 text-xs text-slate-400 dark:text-slate-500">
+          <p class="text-sm text-muted">
+            Coût au meilleur prix :
+            <span class="font-semibold text-strong">{{ formatEur(estimatedCost.total.toFixed(2)) }}</span>
+            <span v-if="estimatedCost.withoutPrice > 0" class="ml-1 text-xs text-muted">
               ({{ estimatedCost.withoutPrice }} carte{{ estimatedCost.withoutPrice > 1 ? 's' : '' }} sans prix)
             </span>
           </p>
@@ -224,7 +250,7 @@ function openCardDetail(name: string): void {
           <li
             v-for="(item, index) in missingWithPrices"
             :key="index"
-            class="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-800"
+            class="flex items-center gap-3 panel px-3 py-2 "
             :class="{ 'cursor-pointer': thumbnailFor(item.name) }"
             :role="thumbnailFor(item.name) ? 'button' : undefined"
             :tabindex="thumbnailFor(item.name) ? 0 : undefined"
@@ -234,11 +260,14 @@ function openCardDetail(name: string): void {
             <CardHoverImage :small="thumbnailFor(item.name)?.imageSmall" :normal="thumbnailFor(item.name)?.imageNormal" :alt="item.name" />
             <div class="flex-1">
               <p class="font-medium">{{ item.name }}</p>
-              <p class="text-xs text-slate-500 dark:text-slate-400">{{ item.owned }}/{{ item.needed }} possédée(s)</p>
+              <p class="text-xs text-muted">{{ item.owned }}/{{ item.needed }} possédée(s)</p>
             </div>
-            <div class="text-right text-xs text-slate-500 dark:text-slate-400">
-              <p>{{ formatEur(item.unitPrice) }} / u.</p>
-              <p class="font-medium text-slate-700 dark:text-slate-300">
+            <div class="text-right text-xs text-muted">
+              <p>
+                {{ formatEur(item.unitPrice) }} / u.
+                <span v-if="item.cheapestSet" class="uppercase text-gold">· {{ item.cheapestSet }}</span>
+              </p>
+              <p class="font-medium text-muted">
                 {{ item.subtotal !== null ? formatEur(item.subtotal.toFixed(2)) : '—' }}
               </p>
             </div>
@@ -249,7 +278,7 @@ function openCardDetail(name: string): void {
       <p v-else class="text-sm text-emerald-600 dark:text-emerald-400">Deck 100% complet !</p>
     </section>
 
-    <p v-else class="text-sm text-slate-500 dark:text-slate-400">
+    <p v-else class="text-sm text-muted">
       Sélectionnez un deck ou collez une decklist pour lancer la comparaison.
     </p>
 

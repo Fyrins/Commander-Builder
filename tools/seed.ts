@@ -4,7 +4,7 @@
  *
  * Prérequis : API démarrée (cd api && symfony server:start --port=8000).
  * Usage :     cd frontend && npx tsx ../tools/seed.ts
- * Options :   SEED_EMAIL / SEED_PASSWORD / SEED_API (défauts ci-dessous)
+ * Options :   SEED_USERNAME / SEED_PASSWORD / SEED_API (défauts ci-dessous)
  */
 import { readFileSync, readdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
@@ -13,7 +13,7 @@ import { parseManaBoxCsv } from '../frontend/lib/engine/parse-csv'
 import { parseDecklist } from '../frontend/lib/engine/parse-decklist'
 
 const API = process.env.SEED_API ?? 'http://127.0.0.1:8000'
-const EMAIL = process.env.SEED_EMAIL ?? 'alexrevire@gmail.com'
+const USERNAME = process.env.SEED_USERNAME ?? 'alex'
 const PASSWORD = process.env.SEED_PASSWORD ?? 'mtg-builder-2026'
 const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), '..', 'data', 'fixtures')
 const CHUNK_SIZE = 300
@@ -36,12 +36,12 @@ async function api(path: string, options: { method?: string; body?: unknown; coo
 
 async function main() {
   // 1. Compte (register idempotent : 409 si déjà créé)
-  const register = await api('/api/register', { method: 'POST', body: { email: EMAIL, password: PASSWORD } })
-  if (register.status === 201) console.log(`Compte créé : ${EMAIL}`)
-  else if (register.status === 409) console.log(`Compte existant : ${EMAIL}`)
+  const register = await api('/api/register', { method: 'POST', body: { username: USERNAME, password: PASSWORD } })
+  if (register.status === 201) console.log(`Compte créé : ${USERNAME}`)
+  else if (register.status === 409) console.log(`Compte existant : ${USERNAME}`)
   else throw new Error(`register → ${register.status} ${JSON.stringify(register.json)}`)
 
-  const login = await api('/api/login', { method: 'POST', body: { email: EMAIL, password: PASSWORD } })
+  const login = await api('/api/login', { method: 'POST', body: { username: USERNAME, password: PASSWORD } })
   if (login.status !== 200 || !login.setCookie) throw new Error(`login → ${login.status}`)
   const cookie = login.setCookie.split(';')[0]
 
@@ -117,7 +117,7 @@ async function main() {
     notFound += res.json.not_found.length
   }
   console.log(`Cartes résolues : ${resolved}, introuvables : ${notFound}`)
-  console.log(`\nSeed terminé. Connexion : ${EMAIL} / ${PASSWORD}`)
+  console.log(`\nSeed terminé. Connexion : ${USERNAME} / ${PASSWORD}`)
 }
 
 main().catch((error) => {

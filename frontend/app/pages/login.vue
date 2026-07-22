@@ -4,8 +4,10 @@ definePageMeta({ layout: false })
 const { login } = useAuth()
 const router = useRouter()
 
-const email = ref('')
+const username = ref('')
 const password = ref('')
+const captchaToken = ref<string | null>(null)
+const captcha = ref<{ reset: () => void } | null>(null)
 const errorMessage = ref('')
 const pending = ref(false)
 
@@ -13,11 +15,15 @@ async function handleSubmit() {
   errorMessage.value = ''
   pending.value = true
   try {
-    await login(email.value, password.value)
+    await login(username.value, password.value, captchaToken.value)
     await router.push('/')
   } catch (error: unknown) {
     const status = (error as { response?: { status?: number } })?.response?.status
-    errorMessage.value = status === 401 ? 'Email ou mot de passe incorrect.' : 'Une erreur est survenue. Réessayez.'
+    if (status === 429) errorMessage.value = 'Trop de tentatives. Réessayez dans une minute.'
+    else if (status === 400) errorMessage.value = 'Vérification anti-robot échouée. Merci de recommencer.'
+    else if (status === 401) errorMessage.value = 'Pseudonyme ou mot de passe incorrect.'
+    else errorMessage.value = 'Une erreur est survenue. Réessayez.'
+    captcha.value?.reset()
   } finally {
     pending.value = false
   }
@@ -25,34 +31,36 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div class="flex min-h-screen items-center justify-center bg-slate-50 px-4 dark:bg-slate-950">
-    <div class="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <h1 class="mb-1 text-xl font-semibold text-slate-900 dark:text-white">Connexion</h1>
-      <p class="mb-6 text-sm text-slate-500 dark:text-slate-400">Accédez à votre collection Magic.</p>
+  <div class="flex min-h-screen items-center justify-center surface-alt px-4 ">
+    <div class="w-full max-w-sm panel p-8 shadow-sm  ">
+      <h1 class="mb-1 text-xl font-semibold text-strong">Connexion</h1>
+      <p class="mb-6 text-sm text-muted">Accédez à votre collection Magic.</p>
 
       <form class="space-y-4" @submit.prevent="handleSubmit">
         <div>
-          <label for="email" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Email</label>
+          <label for="username" class="mb-1 block text-sm font-medium text-muted">Pseudonyme</label>
           <input
-            id="email"
-            v-model="email"
-            type="email"
+            id="username"
+            v-model="username"
+            type="text"
             required
-            autocomplete="email"
-            class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            autocomplete="username"
+            class="field"
           >
         </div>
         <div>
-          <label for="password" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Mot de passe</label>
+          <label for="password" class="mb-1 block text-sm font-medium text-muted">Mot de passe</label>
           <input
             id="password"
             v-model="password"
             type="password"
             required
             autocomplete="current-password"
-            class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+            class="field"
           >
         </div>
+
+        <HCaptcha ref="captcha" v-model="captchaToken" />
 
         <p v-if="errorMessage" class="text-sm text-red-600 dark:text-red-400">{{ errorMessage }}</p>
 
@@ -65,9 +73,9 @@ async function handleSubmit() {
         </button>
       </form>
 
-      <p class="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
+      <p class="mt-6 text-center text-sm text-muted">
         Pas encore de compte ?
-        <NuxtLink to="/register" class="font-medium text-slate-900 underline dark:text-white">Créer un compte</NuxtLink>
+        <NuxtLink to="/register" class="font-medium text-strong underline ">Créer un compte</NuxtLink>
       </p>
     </div>
   </div>

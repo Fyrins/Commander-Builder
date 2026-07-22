@@ -13,6 +13,8 @@ services:
     _defaults:
         autowire: true      # Automatically injects dependencies in your services.
         autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+        bind:
+            $environment: '%kernel.environment%'
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
@@ -26,12 +28,18 @@ services:
         tags:
             - { name: kernel.event_listener, event: lexik_jwt_authentication.on_jwt_created, method: onJWTCreated }
 
-    App\EventListener\JWTAuthenticationSuccessListener:
+    App\Security\AuthCookieFactory:
         arguments:
             $tokenTtl: 14400  # cookie aligné sur la durée de vie du JWT (4h)
-            $secureCookie: false  # dev local en http://
+            $secureCookie: '%env(bool:JWT_COOKIE_SECURE)%'  # false en dev local (http), true en prod
+
+    App\EventListener\JWTAuthenticationSuccessListener:
         tags:
             - { name: kernel.event_listener, event: lexik_jwt_authentication.on_authentication_success, method: onAuthenticationSuccess }
+
+    App\Service\HcaptchaVerifier:
+        arguments:
+            $hcaptchaSecret: '%env(HCAPTCHA_SECRET)%'
 
     App\Service\ScryfallClient:
         arguments:

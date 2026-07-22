@@ -50,12 +50,12 @@ function chunk<T>(items: T[], size: number): T[][] {
 describe.skipIf(!process.env.INTEGRATION)('intégration bout-en-bout', () => {
   it('« Ancient Arsenal » est complété à ~100 % par le pool fusionné', async () => {
     // 1. Auth : compte jetable
-    const email = `integration-${Date.now()}@test.local`
+    const username = `integration-${Date.now()}`
     const password = 'integration-test-1'
-    const register = await api('/api/register', { method: 'POST', body: { email, password } })
+    const register = await api('/api/register', { method: 'POST', body: { username, password } })
     expect(register.status).toBe(201)
 
-    const login = await api('/api/login', { method: 'POST', body: { email, password } })
+    const login = await api('/api/login', { method: 'POST', body: { username, password } })
     expect(login.status).toBe(200)
     expect(login.setCookie).toContain('auth_token=')
     const cookie = login.setCookie!.split(';')[0]

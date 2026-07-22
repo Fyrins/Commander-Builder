@@ -66,13 +66,13 @@ async function submitDeck() {
   <div class="grid gap-6 md:grid-cols-2">
     <div
       class="flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 text-center transition-colors"
-      :class="isDragging ? 'border-slate-500 bg-slate-100 dark:bg-slate-800' : 'border-slate-300 dark:border-slate-700'"
+      :class="isDragging ? 'hairline-strong surface-alt' : 'hairline-strong'"
       @dragover.prevent="isDragging = true"
       @dragleave.prevent="isDragging = false"
       @drop.prevent="onDrop"
     >
-      <p class="mb-2 font-medium text-slate-800 dark:text-slate-100">Collection (CSV ManaBox)</p>
-      <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">
+      <p class="mb-2 font-medium text-strong">Collection (CSV ManaBox)</p>
+      <p class="mb-4 text-sm text-muted">
         Glissez-déposez votre export ManaBox ici, ou choisissez un fichier. Remplace intégralement la collection actuelle.
       </p>
       <label class="btn btn--secondary cursor-pointer py-2">
@@ -85,25 +85,25 @@ async function submitDeck() {
       </ul>
     </div>
 
-    <div class="rounded-xl border border-slate-200 p-6 dark:border-slate-800">
-      <p class="mb-2 font-medium text-slate-800 dark:text-slate-100">Ajouter une decklist</p>
-      <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">Collez une decklist texte (une carte par ligne).</p>
+    <div class="panel p-6 ">
+      <p class="mb-2 font-medium text-strong">Ajouter une decklist</p>
+      <p class="mb-4 text-sm text-muted">Collez une decklist texte (une carte par ligne).</p>
 
       <div class="space-y-3">
         <input
           v-model="deckName"
           type="text"
           placeholder="Nom du deck"
-          class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+          class="field"
         >
         <textarea
           v-model="deckText"
           rows="6"
           placeholder="1 Sol Ring&#10;1 Atraxa, Praetors' Voice (C16) 1"
-          class="w-full rounded-md border border-slate-300 bg-white px-3 py-2 font-mono text-xs text-slate-900 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+          class="field font-mono text-xs"
         />
-        <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-          <input v-model="deckIsOwned" type="checkbox" class="rounded border-slate-400">
+        <label class="flex items-center gap-2 text-sm text-muted">
+          <input v-model="deckIsOwned" type="checkbox" class="mtg-checkbox">
           Deck que je possède physiquement
         </label>
         <button
