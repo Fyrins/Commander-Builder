@@ -77,6 +77,7 @@ function toCollectionRow(item: ApiCollectionItem, card: ResolvedCard | undefined
 }
 
 export function useCollectionStore() {
+  const api = useApi()
   const collectionRows = useState<CollectionRow[]>('store:collectionRows', () => [])
   const decks = useState<ApiDeck[]>('store:decks', () => [])
   const resolvedCards = useState<Map<string, ResolvedCard>>('store:resolvedCards', () => new Map())
@@ -139,7 +140,7 @@ export function useCollectionStore() {
 
     for (let i = 0; i < identifiers.length; i += CHUNK_SIZE) {
       const chunk = identifiers.slice(i, i + CHUNK_SIZE)
-      const response = await $fetch<ResolveResponse>('/api/cards/resolve', {
+      const response = await api<ResolveResponse>('/cards/resolve', {
         method: 'POST',
         credentials: 'include',
         body: { identifiers: chunk },
@@ -158,7 +159,7 @@ export function useCollectionStore() {
 
     for (let i = 0; i < names.length; i += CHUNK_SIZE) {
       const chunk = names.slice(i, i + CHUNK_SIZE)
-      const response = await $fetch<ResolveResponse>('/api/cards/resolve', {
+      const response = await api<ResolveResponse>('/cards/resolve', {
         method: 'POST',
         credentials: 'include',
         body: { identifiers: chunk.map((name) => ({ name })) },
@@ -183,7 +184,7 @@ export function useCollectionStore() {
     const next = new Map(cheapestByOracle.value)
     for (let i = 0; i < missing.length; i += CHUNK_SIZE) {
       const chunk = missing.slice(i, i + CHUNK_SIZE)
-      const response = await $fetch<CheapestResponse>('/api/cards/cheapest', {
+      const response = await api<CheapestResponse>('/cards/cheapest', {
         method: 'POST',
         credentials: 'include',
         body: { oracleIds: chunk },
@@ -230,8 +231,8 @@ export function useCollectionStore() {
     loading.value = true
     try {
       const [collectionItems, deckList] = await Promise.all([
-        $fetch<ApiCollectionItem[]>('/api/collection', { credentials: 'include' }),
-        $fetch<ApiDeck[]>('/api/decks', { credentials: 'include' }),
+        api<ApiCollectionItem[]>('/collection', { credentials: 'include' }),
+        api<ApiDeck[]>('/decks', { credentials: 'include' }),
       ])
 
       decks.value = deckList
@@ -254,7 +255,7 @@ export function useCollectionStore() {
     const { rows, errors } = parseManaBoxCsv(text)
 
     if (rows.length > 0) {
-      await $fetch('/api/collection', {
+      await api('/collection', {
         method: 'PUT',
         credentials: 'include',
         body: {
@@ -278,7 +279,7 @@ export function useCollectionStore() {
     const { entries, errors } = parseDecklist(text)
 
     if (entries.length > 0) {
-      await $fetch('/api/decks', {
+      await api('/decks', {
         method: 'POST',
         credentials: 'include',
         body: {
@@ -301,7 +302,7 @@ export function useCollectionStore() {
 
   async function toggleDeckInclude(deck: ApiDeck): Promise<void> {
     const nextValue = !deck.includeInPool
-    await $fetch(`/api/decks/${deck.id}`, {
+    await api(`/decks/${deck.id}`, {
       method: 'PATCH',
       credentials: 'include',
       body: { includeInPool: nextValue },
@@ -312,7 +313,7 @@ export function useCollectionStore() {
   }
 
   async function deleteDeck(deck: ApiDeck): Promise<void> {
-    await $fetch(`/api/decks/${deck.id}`, { method: 'DELETE', credentials: 'include' })
+    await api(`/decks/${deck.id}`, { method: 'DELETE', credentials: 'include' })
     decks.value = decks.value.filter((d) => d.id !== deck.id)
     rebuildPool()
   }

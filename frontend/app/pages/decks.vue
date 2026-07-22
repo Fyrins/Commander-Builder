@@ -64,6 +64,7 @@ interface DeckCandidate {
   isOwnedCommander: boolean
 }
 
+const api = useApi()
 const store = useCollectionStore()
 const route = useRoute()
 const router = useRouter()
@@ -120,7 +121,7 @@ async function computeRanking(): Promise<void> {
   rankingLoading.value = true
   rankingError.value = ''
   try {
-    const topResp = await $fetch<EdhrecTopResponse>('/api/edhrec/top', { credentials: 'include' })
+    const topResp = await api<EdhrecTopResponse>('/edhrec/top', { credentials: 'include' })
     const poolCommanders = detectCommanders(store.poolCards.value)
     const ownedSlugs = new Set(poolCommanders.map((c) => edhrecSlug(c.name)))
 
@@ -144,7 +145,7 @@ async function computeRanking(): Promise<void> {
         batch.map(async (candidate) => {
           let payload = averageCache.value.get(candidate.slug)
           if (!payload) {
-            payload = await $fetch<EdhrecAverageResponse>(`/api/edhrec/average/${candidate.slug}`, { credentials: 'include' })
+            payload = await api<EdhrecAverageResponse>(`/edhrec/average/${candidate.slug}`, { credentials: 'include' })
             averageCache.value.set(candidate.slug, payload)
           }
           return {
@@ -347,7 +348,7 @@ watch(
     if (!cachedAverage) averageLoading.value = true
 
     const fetches: Promise<void>[] = [
-      $fetch<EdhrecResponse>(`/api/edhrec/${newSlug}`, { credentials: 'include' })
+      api<EdhrecResponse>(`/edhrec/${newSlug}`, { credentials: 'include' })
         .then((data) => {
           edhrecData.value = data
         })
@@ -364,7 +365,7 @@ watch(
       averageData.value = cachedAverage
     } else {
       fetches.push(
-        $fetch<EdhrecAverageResponse>(`/api/edhrec/average/${newSlug}`, { credentials: 'include' })
+        api<EdhrecAverageResponse>(`/edhrec/average/${newSlug}`, { credentials: 'include' })
           .then((data) => {
             averageData.value = data
             averageCache.value.set(newSlug, data)
