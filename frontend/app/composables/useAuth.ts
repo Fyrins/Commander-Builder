@@ -8,6 +8,7 @@ export interface AuthUser {
 }
 
 export function useAuth() {
+  const api = useApi()
   const user = useState<AuthUser | null>('auth:user', () => null)
   const initialized = useState<boolean>('auth:initialized', () => false)
   const pending = useState<boolean>('auth:pending', () => false)
@@ -16,7 +17,7 @@ export function useAuth() {
   async function fetchMe(): Promise<AuthUser | null> {
     pending.value = true
     try {
-      const data = await $fetch<AuthUser>('/api/me', { credentials: 'include' })
+      const data = await api<AuthUser>('/me', { credentials: 'include' })
       user.value = data
       return data
     } catch {
@@ -29,7 +30,7 @@ export function useAuth() {
   }
 
   async function login(username: string, password: string, hcaptchaToken?: string | null): Promise<void> {
-    await $fetch('/api/login', {
+    await api('/login', {
       method: 'POST',
       credentials: 'include',
       body: { username, password, hcaptchaToken },
@@ -42,7 +43,7 @@ export function useAuth() {
   async function register(username: string, password: string, hcaptchaToken?: string | null): Promise<void> {
     // L'inscription pose directement le cookie JWT (auto-login côté serveur) :
     // pas de second appel /api/login, donc un seul token hCaptcha nécessaire.
-    await $fetch('/api/register', {
+    await api('/register', {
       method: 'POST',
       credentials: 'include',
       body: { username, password, hcaptchaToken },
@@ -53,7 +54,7 @@ export function useAuth() {
 
   async function logout(): Promise<void> {
     try {
-      await $fetch('/api/logout', { method: 'POST', credentials: 'include' })
+      await api('/logout', { method: 'POST', credentials: 'include' })
     } finally {
       user.value = null
       store.reset()
