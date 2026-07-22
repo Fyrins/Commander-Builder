@@ -1,6 +1,13 @@
 name: Deploy API
 
+# Déploiement SSH : rsync fiable (pas de coupure comme le FTPS) + exécution
+# automatique de composer/migrations/cache. Aucune manipulation manuelle après
+# un déploiement.
+#
+# Secrets requis : SSH_PRIVATE_KEY, SSH_HOST, SSH_USER, SSH_PORT.
+# Variable optionnelle : API_SSH_DIR (défaut commanderbuilder/api, relatif au home).
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
@@ -9,51 +16,39 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      REMOTE_DIR: ${{ vars.API_SSH_DIR || 'commanderbuilder/api' }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
 
-      - name: Upload via FTPS
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_HOST }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
-          local-dir: ./api/
-          # FTP chrooté sur la racine du compte
-          server-dir: ${{ vars.API_DIR || './api/' }}
-          exclude: |
-            **/.env.local
-            **/config/jwt/**
-            **/var/**
-            **/vendor/**
-
-      - name: Vérifier si composer.lock a changé
+      - name: Configurer la clé SSH
         run: |
-          if git diff HEAD~1 --name-only | grep -q "api/composer.lock"; then
-            echo ""
-            echo "⚠️  composer.lock a changé."
-            echo "   → Lancer manuellement via le terminal cPanel O2Switch :"
-            echo "     cd ~/commanderbuilder/api"
-            echo "     composer install --no-dev --optimize-autoloader"
-            echo "     php bin/console cache:clear --env=prod --no-debug"
-            echo "     php bin/console cache:warmup --env=prod --no-debug"
-          else
-            echo "✅ composer.lock inchangé — pas de composer install nécessaire."
-          fi
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p "${{ secrets.SSH_PORT }}" -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
 
-      - name: Rappel migrations
+      - name: Rsync des sources API
+        # --delete garde le serveur synchro ; les excludes protègent .env.local,
+        # les clés JWT, var/ et vendor/ (ni transférés ni supprimés).
         run: |
-          if git diff HEAD~1 --name-only | grep -q "api/migrations/"; then
-            echo ""
-            echo "⚠️  Nouvelles migrations détectées."
-            echo "   → Lancer manuellement via le terminal cPanel O2Switch :"
-            echo "     php bin/console doctrine:migrations:migrate --no-interaction --env=prod --allow-no-migration"
-          else
-            echo "✅ Pas de nouvelles migrations."
-          fi
+          rsync -az --delete \
+            --exclude='/.env.local' \
+            --exclude='/config/jwt/' \
+            --exclude='/var/' \
+            --exclude='/vendor/' \
+            -e "ssh -p ${{ secrets.SSH_PORT }} -i ~/.ssh/id_ed25519" \
+            ./api/ "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${REMOTE_DIR}/"
+
+      - name: Post-déploiement (composer, migrations, cache)
+        run: |
+          ssh -p "${{ secrets.SSH_PORT }}" -i ~/.ssh/id_ed25519 \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "set -e; cd '${REMOTE_DIR}'; \
+             composer install --no-dev --optimize-autoloader --no-interaction; \
+             php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration; \
+             php bin/console cache:clear; \
+             php bin/console cache:warmup"
 
   smoke-test:
     needs: deploy
@@ -63,20 +58,10 @@ jobs:
         run: |
           set -e
           API="https://api.commanderbuilder.fr"
-
-          echo "=== Test 1: API répond ==="
+          echo "=== /api/login POST (attendu 400/401) ==="
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API/api/login" -X POST -H "Content-Type: application/json" -d '{}')
-          echo "  /api/login POST: $STATUS"
-          [ "$STATUS" = "400" ] || [ "$STATUS" = "401" ] || { echo "FAIL: attendu 400 ou 401"; exit 1; }
-
-          echo "=== Test 2: endpoints authentifiés protégés ==="
+          [ "$STATUS" = "400" ] || [ "$STATUS" = "401" ] || { echo "FAIL: $STATUS"; exit 1; }
+          echo "=== /api/me (attendu 401) ==="
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API/api/me")
-          echo "  /api/me sans cookie: $STATUS"
-          [ "$STATUS" = "401" ] || { echo "FAIL: /api/me devrait être 401"; exit 1; }
-
-          echo "=== Test 3: HTTPS forcé ==="
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L "http://api.commanderbuilder.fr/api/login" -X POST -H "Content-Type: application/json" -d '{}')
-          [ "$STATUS" = "400" ] || [ "$STATUS" = "401" ] || { echo "FAIL"; exit 1; }
-
-          echo ""
-          echo "✅ Tous les smoke tests API passent"
+          [ "$STATUS" = "401" ] || { echo "FAIL: $STATUS"; exit 1; }
+          echo "✅ API OK"
