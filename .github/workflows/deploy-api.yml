@@ -7,6 +7,7 @@ name: Deploy API
 # Secrets requis : SSH_PRIVATE_KEY, SSH_HOST, SSH_USER, SSH_PORT.
 # Variable optionnelle : API_SSH_DIR (défaut commanderbuilder/api, relatif au home).
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
