@@ -1,11 +1,7 @@
 name: Deploy API
 
-# Déploiement SSH : rsync fiable (pas de coupure comme le FTPS) + exécution
-# automatique de composer/migrations/cache. Aucune manipulation manuelle après
-# un déploiement.
-#
-# Secrets requis : SSH_PRIVATE_KEY, SSH_HOST, SSH_USER, SSH_PORT.
-# Variable optionnelle : API_SSH_DIR (défaut commanderbuilder/api, relatif au home).
+# Déploiement SSH : rsync fiable + composer/migrations/cache automatiques.
+# Secrets : SSH_PRIVATE_KEY, SSH_HOST, SSH_USER, SSH_PORT, REMOTE_PATH (base, ex. commanderbuilder/).
 on:
   workflow_dispatch:
   push:
@@ -16,8 +12,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    env:
-      REMOTE_DIR: ${{ vars.API_SSH_DIR || 'commanderbuilder/api' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -26,25 +20,26 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -p "${{ secrets.SSH_PORT }}" -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+          ssh-keyscan -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null || true
 
       - name: Rsync des sources API
-        # --delete garde le serveur synchro ; les excludes protègent .env.local,
-        # les clés JWT, var/ et vendor/ (ni transférés ni supprimés).
         run: |
+          BASE="${{ secrets.REMOTE_PATH }}"; DIR="${BASE%/}/api"
           rsync -az --delete \
             --exclude='/.env.local' \
             --exclude='/config/jwt/' \
             --exclude='/var/' \
             --exclude='/vendor/' \
-            -e "ssh -p ${{ secrets.SSH_PORT }} -i ~/.ssh/id_ed25519" \
-            ./api/ "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${REMOTE_DIR}/"
+            -e "ssh -p ${{ secrets.SSH_PORT }} -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20" \
+            ./api/ "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:$DIR/"
 
       - name: Post-déploiement (composer, migrations, cache)
         run: |
+          BASE="${{ secrets.REMOTE_PATH }}"; DIR="${BASE%/}/api"
           ssh -p "${{ secrets.SSH_PORT }}" -i ~/.ssh/id_ed25519 \
+            -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 \
             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-            "set -e; cd '${REMOTE_DIR}'; \
+            "set -e; cd '$DIR'; \
              composer install --no-dev --optimize-autoloader --no-interaction; \
              php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration; \
              php bin/console cache:clear; \
@@ -58,10 +53,8 @@ jobs:
         run: |
           set -e
           API="https://api.commanderbuilder.fr"
-          echo "=== /api/login POST (attendu 400/401) ==="
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API/api/login" -X POST -H "Content-Type: application/json" -d '{}')
-          [ "$STATUS" = "400" ] || [ "$STATUS" = "401" ] || { echo "FAIL: $STATUS"; exit 1; }
-          echo "=== /api/me (attendu 401) ==="
+          [ "$STATUS" = "400" ] || [ "$STATUS" = "401" ] || { echo "FAIL login: $STATUS"; exit 1; }
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API/api/me")
-          [ "$STATUS" = "401" ] || { echo "FAIL: $STATUS"; exit 1; }
+          [ "$STATUS" = "401" ] || { echo "FAIL me: $STATUS"; exit 1; }
           echo "✅ API OK"
