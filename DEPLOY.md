@@ -47,6 +47,13 @@ Protège l'inscription et la connexion (actif en production uniquement). Créer 
 5. **Cookie sécurisé** : piloté par `JWT_COOKIE_SECURE` (défaut `false` en dev, `true` posé dans le `.env.local` de prod ci-dessus). Rien d'autre à faire.
 6. **Smoke test** : les jobs `smoke-test` des workflows valident automatiquement homepage, manifest PWA, HTTPS et protection des endpoints.
 
+## Préchauffage du cache (optionnel, recommandé)
+
+La commande `app:warm-cache` pré-remplit les caches globaux (`card` + `oracle_price`) avec les cartes staples du top EDHREC, pour que la liste des decks et les budgets « meilleur prix » soient rapides dès le premier chargement. Idempotente (ne touche Scryfall que pour ce qui manque/est périmé).
+
+- Manuel : `php bin/console app:warm-cache --commanders=60 --min-decks=5`
+- Cron cPanel nocturne (exemple, 4h) : `0 4 * * * cd ~/commanderbuilder/api && php bin/console app:warm-cache >/dev/null 2>&1`
+
 ## Déploiements suivants
 
 Push sur `main` → tout est automatique. Deux cas demandent un passage terminal cPanel (le workflow l'affiche dans ses logs) :
