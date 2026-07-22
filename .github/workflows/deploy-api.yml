@@ -1,7 +1,12 @@
 name: Deploy API
 
-# Déploiement SSH : rsync fiable + composer/migrations/cache automatiques.
-# Secrets : SSH_PRIVATE_KEY, SSH_HOST, SSH_USER, SSH_PORT, REMOTE_PATH (base, ex. commanderbuilder/).
+# Déploiement FTPS via lftp : upload fiable (reconnexions auto, gère les coupures
+# d'O2Switch). Le compte FTP est chrooté sur ~/commanderbuilder, donc la cible
+# est /api/. Les excludes protègent .env.local, les clés JWT, var/ et vendor/.
+#
+# composer install / migrations restent manuels (pas de SSH depuis la CI sur
+# O2Switch) : le workflow le rappelle uniquement quand composer.lock ou une
+# migration change. Pour un simple changement de code : rien à faire.
 on:
   workflow_dispatch:
   push:
@@ -14,36 +19,48 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
-      - name: Configurer la clé SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -p "${{ secrets.SSH_PORT }}" "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null || true
+      - name: Installer lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y lftp
 
-      - name: Rsync des sources API
+      - name: Upload API via lftp
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.FTP_PASSWORD }}
         run: |
-          BASE="${{ secrets.REMOTE_PATH }}"; DIR="${BASE%/}/api"
-          rsync -az --delete \
-            --exclude='/.env.local' \
-            --exclude='/config/jwt/' \
-            --exclude='/var/' \
-            --exclude='/vendor/' \
-            -e "ssh -p ${{ secrets.SSH_PORT }} -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20" \
-            ./api/ "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:$DIR/"
+          lftp -c "
+            set ftp:ssl-allow true;
+            set ssl:verify-certificate no;
+            set ftp:ssl-force true;
+            set ftp:ssl-protect-data true;
+            set net:max-retries 5;
+            set net:timeout 30;
+            set net:reconnect-interval-base 5;
+            set mirror:parallel-transfer-count 2;
+            open -u \"\$FTP_USER\",\"\$FTP_PASS\" \"\$FTP_HOST\";
+            mirror -R --delete --verbose \
+              --exclude '\.env\.local$' \
+              --exclude '^config/jwt/' \
+              --exclude '^var/' \
+              --exclude '^vendor/' \
+              ./api/ /api/ ;
+          "
 
-      - name: Post-déploiement (composer, migrations, cache)
+      - name: Rappel composer / migrations si nécessaire
         run: |
-          BASE="${{ secrets.REMOTE_PATH }}"; DIR="${BASE%/}/api"
-          ssh -p "${{ secrets.SSH_PORT }}" -i ~/.ssh/id_ed25519 \
-            -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 \
-            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
-            "set -e; cd '$DIR'; \
-             composer install --no-dev --optimize-autoloader --no-interaction; \
-             php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration; \
-             php bin/console cache:clear; \
-             php bin/console cache:warmup"
+          CHANGED=$(git diff HEAD~1 --name-only)
+          if echo "$CHANGED" | grep -q "api/composer.lock"; then
+            echo "⚠️  composer.lock a changé — en terminal cPanel : cd ~/commanderbuilder/api && composer install --no-dev --optimize-autoloader && php bin/console cache:clear && php bin/console cache:warmup"
+          fi
+          if echo "$CHANGED" | grep -q "api/migrations/"; then
+            echo "⚠️  Nouvelles migrations — en terminal cPanel : php bin/console doctrine:migrations:migrate --no-interaction"
+          fi
+          if ! echo "$CHANGED" | grep -qE "api/(composer.lock|migrations/)"; then
+            echo "✅ Changement de code seul — aucune commande manuelle nécessaire."
+          fi
 
   smoke-test:
     needs: deploy
