@@ -20,7 +20,9 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
-        run: cd frontend && npm ci
+        # npm install (et non npm ci) : honore le package-lock committé mais
+        # tolère les quirks de strictness de npm sur le gros arbre Nuxt.
+        run: cd frontend && npm install --no-audit --no-fund
 
       - name: Run unit tests
         run: cd frontend && npm run test
