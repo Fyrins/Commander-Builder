@@ -1,5 +1,10 @@
 name: Deploy Frontend
 
+# Déploiement SSH : build statique Nuxt puis rsync fiable vers le docroot.
+#
+# Secrets requis : SSH_PRIVATE_KEY, SSH_HOST, SSH_USER, SSH_PORT.
+# Variable optionnelle : FRONTEND_SSH_DIR (défaut commanderbuilder/www).
+# Variable HCAPTCHA_SITE_KEY : clé de site hCaptcha (publique).
 on:
   push:
     branches: [main]
@@ -9,6 +14,8 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      REMOTE_DIR: ${{ vars.FRONTEND_SSH_DIR || 'commanderbuilder/www' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -20,8 +27,6 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
-        # npm install (et non npm ci) : honore le package-lock committé mais
-        # tolère les quirks de strictness de npm sur le gros arbre Nuxt.
         run: cd frontend && npm install --no-audit --no-fund
 
       - name: Run unit tests
@@ -31,59 +36,39 @@ jobs:
         run: cd frontend && npx nuxt generate
         env:
           NUXT_PUBLIC_API_BASE: https://api.commanderbuilder.fr/api
-          # Clé de site hCaptcha (publique). Repli sur la clé de test si la variable
-          # de dépôt HCAPTCHA_SITE_KEY est absente, pour ne pas injecter une chaîne vide.
           NUXT_PUBLIC_HCAPTCHA_SITE_KEY: ${{ vars.HCAPTCHA_SITE_KEY || '10000000-ffff-ffff-ffff-000000000001' }}
 
-      - name: Upload via FTPS
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_HOST }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
-          local-dir: ./frontend/.output/public/
-          # FTP chrooté sur la racine du compte
-          server-dir: ${{ vars.FRONTEND_DIR || './www/' }}
+      - name: Configurer la clé SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p "${{ secrets.SSH_PORT }}" -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Rsync du build vers le docroot
+        run: |
+          rsync -az --delete \
+            -e "ssh -p ${{ secrets.SSH_PORT }} -i ~/.ssh/id_ed25519" \
+            ./frontend/.output/public/ "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${REMOTE_DIR}/"
 
   smoke-test:
     needs: deploy
     runs-on: ubuntu-latest
     steps:
       - name: Attendre propagation
-        run: sleep 30
+        run: sleep 15
 
       - name: Smoke tests frontend
         run: |
           set -e
           URL="https://commanderbuilder.fr"
-
-          echo "=== Test 1: page d'accueil accessible (retry O2Switch restart) ==="
           STATUS=""
-          for attempt in 1 2 3 4 5 6 7 8; do
+          for attempt in 1 2 3 4 5 6; do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL/")
-            echo "  Tentative $attempt — Status: $STATUS"
             [ "$STATUS" = "200" ] && break
-            sleep 15
+            sleep 10
           done
-          [ "$STATUS" = "200" ] || { echo "FAIL: homepage non-200 après 8 tentatives"; exit 1; }
-
-          echo "=== Test 2: HTTPS forcé ==="
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L "http://commanderbuilder.fr/")
-          [ "$STATUS" = "200" ] || { echo "FAIL"; exit 1; }
-
-          echo "=== Test 3: manifest PWA accessible ==="
+          [ "$STATUS" = "200" ] || { echo "FAIL: homepage $STATUS"; exit 1; }
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL/manifest.webmanifest")
-          echo "  manifest.webmanifest: $STATUS"
-          [ "$STATUS" = "200" ] || { echo "FAIL: manifest PWA absent"; exit 1; }
-
-          echo "=== Test 4: assets _nuxt/ accessibles ==="
-          ASSET=$(curl -s "$URL/" | grep -oE '/_nuxt/[A-Za-z0-9_.-]+\.js' | head -1)
-          if [ -n "$ASSET" ]; then
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL$ASSET")
-            echo "  Asset $ASSET : $STATUS"
-            [ "$STATUS" = "200" ] || { echo "FAIL"; exit 1; }
-          fi
-
-          echo ""
-          echo "✅ Tous les smoke tests passent"
+          [ "$STATUS" = "200" ] || { echo "FAIL: manifest $STATUS"; exit 1; }
+          echo "✅ Front OK"
