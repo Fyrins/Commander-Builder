@@ -6,6 +6,7 @@ name: Deploy Frontend
 # Variable optionnelle : FRONTEND_SSH_DIR (défaut commanderbuilder/www).
 # Variable HCAPTCHA_SITE_KEY : clé de site hCaptcha (publique).
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     paths:
