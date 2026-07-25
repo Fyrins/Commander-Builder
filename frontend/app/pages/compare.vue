@@ -233,7 +233,7 @@ function openCardDetail(name: string): void {
       Inclure les autres éditions
     </label>
 
-    <section v-if="result" class="space-y-6 panel p-6 ">
+    <section v-if="result" class="space-y-6 panel p-4 sm:p-6 ">
       <div class="flex flex-wrap items-center gap-6">
         <div
           class="ring relative flex h-32 w-32 items-center justify-center"
