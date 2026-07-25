@@ -57,19 +57,28 @@ jobs:
     needs: deploy
     runs-on: ubuntu-latest
     steps:
-      - name: Attendre propagation
-        run: sleep 15
+      - name: Attendre la propagation
+        run: sleep 30
       - name: Smoke tests frontend
         run: |
-          set -e
           URL="https://commanderbuilder.fr"
-          STATUS=""
-          for attempt in 1 2 3 4 5 6; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL/")
-            [ "$STATUS" = "200" ] && break
-            sleep 10
-          done
-          [ "$STATUS" = "200" ] || { echo "FAIL homepage: $STATUS"; exit 1; }
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL/manifest.webmanifest")
-          [ "$STATUS" = "200" ] || { echo "FAIL manifest: $STATUS"; exit 1; }
+          # Après un `mirror --delete`, O2Switch peut renvoyer des 502/503
+          # transitoires le temps de se recharger : on réessaie ~3 min avant
+          # de conclure à un échec, pour ne pas passer en rouge à tort.
+          check() {
+            local path="$1" status
+            for attempt in $(seq 1 12); do
+              status=$(curl -s -o /dev/null -w "%{http_code}" "$URL$path" || true)
+              if [ "$status" = "200" ]; then
+                echo "✓ $path (200)"
+                return 0
+              fi
+              echo "  $path → $status (tentative $attempt/12), nouvel essai dans 15s…"
+              sleep 15
+            done
+            echo "FAIL $path : dernier code = $status"
+            return 1
+          }
+          check "/" || exit 1
+          check "/manifest.webmanifest" || exit 1
           echo "✅ Front OK"
