@@ -69,6 +69,12 @@ const result = computed(() => {
 // chiffrable ici : résolution par nom + prix se font en un lot).
 const resolvingNames = ref(false)
 const resolvingPrices = ref(false)
+// Compteurs de résolutions en vol : le watcher peut se relancer avant la fin
+// d'un await (changement de deck/decklist rapide). On ne repasse le flag à
+// false que lorsque la dernière résolution se termine, sinon le skeleton
+// clignote/disparaît prématurément.
+let namesInflight = 0
+let pricesInflight = 0
 
 /** Tente de valoriser les cartes manquantes non résolues localement (nom seul), une seule fois par nom. */
 const attemptedNames = new Set<string>()
@@ -81,11 +87,12 @@ watch(
       .filter((name) => !attemptedNames.has(name.toLowerCase()))
     if (namesToTry.length === 0) return
     namesToTry.forEach((name) => attemptedNames.add(name.toLowerCase()))
+    namesInflight++
     resolvingNames.value = true
     try {
       await store.resolveByNames(namesToTry)
     } finally {
-      resolvingNames.value = false
+      if (--namesInflight === 0) resolvingNames.value = false
     }
   },
   { immediate: true },
@@ -105,11 +112,12 @@ watch(
     const oracleIds = missing
       .map((item) => thumbnailFor(item.name)?.oracleId)
       .filter((id): id is string => Boolean(id))
+    pricesInflight++
     resolvingPrices.value = true
     try {
       await store.fetchCheapest(oracleIds)
     } finally {
-      resolvingPrices.value = false
+      if (--pricesInflight === 0) resolvingPrices.value = false
     }
   },
   { immediate: true },

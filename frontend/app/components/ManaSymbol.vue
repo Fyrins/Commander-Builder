@@ -18,8 +18,9 @@ const style = computed(() => {
   return { '--mana-color-a': colorA, '--mana-color-b': colorB }
 })
 
-/** Code Scryfall sans accolades ni slash, ex. `{G/W}` → `GW`, `{2/U}` → `2U`. */
-const svgCode = computed(() => props.code.toUpperCase().replace('/', ''))
+/** Code Scryfall sans accolades ni slash, ex. `{G/W}` → `GW`, `{2/U}` → `2U`,
+ * `{W/U/P}` → `WUP` (phyrexian hybride : plusieurs slashes à retirer). */
+const svgCode = computed(() => props.code.toUpperCase().replace(/\//g, ''))
 // Symboles servis depuis nos assets (public/mana/, précachés par le SW) plutôt
 // que hotlinkés depuis le CDN Scryfall : évite une requête externe lazy par
 // symbole (très lent en 3G au premier affichage).
