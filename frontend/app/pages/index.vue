@@ -15,12 +15,12 @@ function toggleColorMode() {
 }
 
 useSeoMeta({
-  title: 'Commander Builder — quels commandants jouer, et compléter tes decks au meilleur prix',
+  title: 'Commander Builder : les commandants que tu peux jouer, et tes decks au meilleur prix',
   description:
-    'Importe ta collection Magic (export ManaBox) et tes decklists. Commander Builder détecte tes commandants jouables et mesure la complétion de n\'importe quel deck, avec le budget d\'achat priorisé à l\'édition la moins chère. Gratuit, sans email.',
+    'Importe ta collection Magic (export ManaBox) et tes decklists. Commander Builder trouve tes commandants jouables et mesure la complétion de n\'importe quel deck, avec le budget d\'achat chiffré à l\'édition la moins chère. Gratuit, sans email.',
   ogTitle: 'Commander Builder',
   ogDescription:
-    'Sais quels commandants tu peux jouer, et complète tes decks au meilleur prix. Gratuit, sans email — juste un pseudo.',
+    'Trouve les commandants que tu peux jouer, et complète tes decks au meilleur prix. Gratuit, sans email.',
   ogImage: '/screenshots/decks.webp',
   ogType: 'website',
   twitterCard: 'summary_large_image',
@@ -31,28 +31,28 @@ const features = [
   {
     eyebrow: 'Ta collection',
     title: 'Importe ta collection en un fichier',
-    body: 'Exporte ta collection depuis ManaBox et dépose le CSV. Tes cartes et tes decklists sont fusionnés en un pool unique, réparti par identité de couleur — sans jamais dépendre du nom ou de la langue : le matching se fait sur l\'identifiant Scryfall.',
+    body: 'Exporte ta collection depuis ManaBox et dépose le CSV. Tes cartes et tes decklists forment un seul pool, réparti par identité de couleur. Peu importe la langue ou l\'orthographe du nom : l\'association se fait sur l\'identifiant Scryfall.',
     image: '/screenshots/inventaire.webp',
     alt: 'Vue Inventaire : total de cartes, uniques, répartition par couleur et liste des decks.',
   },
   {
     eyebrow: 'Tes commandants',
     title: 'Découvre les commandants que tu peux jouer',
-    body: 'Commander Builder repère automatiquement, dans ton pool, toutes les cartes légales comme commandant. Filtre par identité de couleur pour trouver ta prochaine table de commander.',
+    body: 'Commander Builder repère dans ton pool toutes les cartes qui peuvent servir de commandant. Filtre par couleur pour préparer ta prochaine partie.',
     image: '/screenshots/commandants.webp',
     alt: 'Grille des commandants jouables détectés dans le pool, filtrables par couleur.',
   },
   {
     eyebrow: 'Le comparateur',
     title: 'Mesure la complétion de n\'importe quel deck',
-    body: 'Colle une decklist ou choisis un de tes decks : tu vois immédiatement ton taux de complétion, les cartes manquantes, et le coût pour les acheter — toujours chiffré à l\'édition la moins chère. Les terrains de base sont considérés comme acquis.',
+    body: 'Colle une decklist ou choisis un de tes decks. Tu vois aussitôt ton taux de complétion, les cartes qui manquent et leur prix à l\'édition la moins chère. Les terrains de base comptent comme acquis.',
     image: '/screenshots/comparateur.webp',
     alt: 'Comparateur : anneau de complétion, cartes manquantes et coût au meilleur prix.',
   },
   {
     eyebrow: 'Les decks',
     title: 'Explore les decks classés pour ta collection',
-    body: 'Les decks moyens EDHREC sont classés par compatibilité avec ce que tu possèdes. Ouvre une fiche pour la liste d\'achat priorisée, les statistiques (courbe de mana, couleurs, types) et le budget de complétion.',
+    body: 'Les decks moyens d\'EDHREC sont classés selon ce que tu possèdes déjà. Ouvre une fiche pour la liste d\'achat priorisée, les stats (courbe de mana, couleurs, types) et le budget pour compléter.',
     image: '/screenshots/deck-detail.webp',
     alt: 'Fiche deck : complétion du deck moyen, budget et cartes à acheter en priorité.',
   },
@@ -66,7 +66,7 @@ const features = [
       <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
         <NuxtLink to="/" class="flex items-center gap-2.5">
           <AppSigil class="h-7 w-7 shrink-0" />
-          <span class="brand">Commander Builder</span>
+          <span class="brand hidden sm:inline">Commander Builder</span>
         </NuxtLink>
 
         <div class="flex items-center gap-2 sm:gap-3">
@@ -86,11 +86,17 @@ const features = [
           </button>
 
           <template v-if="user">
-            <NuxtLink to="/inventaire" class="btn btn--primary px-4 py-2">Ouvrir mon inventaire</NuxtLink>
+            <NuxtLink to="/inventaire" class="btn btn--primary whitespace-nowrap px-4 py-2">Ouvrir mon inventaire</NuxtLink>
           </template>
           <template v-else>
-            <NuxtLink to="/login" class="btn btn--secondary px-4 py-2">Se connecter</NuxtLink>
-            <NuxtLink to="/register" class="btn btn--primary px-4 py-2">Créer un compte</NuxtLink>
+            <NuxtLink to="/login" class="btn btn--ghost p-2 sm:hidden" aria-label="Se connecter">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5">
+                <circle cx="12" cy="8" r="3.5" />
+                <path d="M5.5 20a6.5 6.5 0 0 1 13 0" />
+              </svg>
+            </NuxtLink>
+            <NuxtLink to="/login" class="btn btn--secondary whitespace-nowrap px-4 py-2 max-sm:hidden">Se connecter</NuxtLink>
+            <NuxtLink to="/register" class="btn btn--primary whitespace-nowrap px-4 py-2">Créer un compte</NuxtLink>
           </template>
         </div>
       </div>
@@ -98,19 +104,21 @@ const features = [
 
     <main>
       <!-- Hero -->
-      <section class="mx-auto max-w-6xl px-4 pt-16 pb-10 text-center anim-stagger">
-        <p class="hero-eyebrow">Deck building pour Magic: The Gathering — format Commander</p>
-        <h1 class="hero-title">Sais quels commandants tu peux jouer,<br class="hidden sm:block"> et complète tes decks au meilleur prix.</h1>
-        <p class="hero-lede">
-          Importe ta collection et tes decklists. Commander Builder te dit quels commandants sont à ta portée
-          et combien il te manque pour n'importe quel deck — chiffré à l'édition la moins chère.
-        </p>
-        <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <NuxtLink v-if="!user" to="/register" class="btn btn--primary px-6 py-2.5 text-base">Créer un compte</NuxtLink>
-          <NuxtLink v-else to="/inventaire" class="btn btn--primary px-6 py-2.5 text-base">Ouvrir mon inventaire</NuxtLink>
-          <NuxtLink v-if="!user" to="/login" class="btn btn--secondary px-6 py-2.5 text-base">Se connecter</NuxtLink>
+      <section class="mx-auto max-w-6xl px-6 pt-14 pb-12 text-center sm:pt-20">
+        <div class="mx-auto max-w-3xl anim-stagger">
+          <p class="hero-eyebrow">Pensé pour le format Commander de Magic: The Gathering</p>
+          <h1 class="hero-title">Trouve les commandants que tu peux jouer, et complète tes decks au meilleur prix.</h1>
+          <p class="hero-lede">
+            Importe ta collection et tes decklists. Commander Builder te montre les commandants à ta portée
+            et ce qu'il te manque pour monter n'importe quel deck, chiffré à l'édition la moins chère.
+          </p>
+          <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <NuxtLink v-if="!user" to="/register" class="btn btn--primary px-6 py-2.5 text-base">Créer un compte</NuxtLink>
+            <NuxtLink v-else to="/inventaire" class="btn btn--primary px-6 py-2.5 text-base">Ouvrir mon inventaire</NuxtLink>
+            <NuxtLink v-if="!user" to="/login" class="btn btn--secondary px-6 py-2.5 text-base">Se connecter</NuxtLink>
+          </div>
+          <p class="mt-4 text-sm text-muted">Gratuit, sans email. Juste un pseudo.</p>
         </div>
-        <p class="mt-4 text-sm text-muted">Gratuit, sans email — juste un pseudo.</p>
 
         <figure class="hero-shot anim-rise">
           <img
@@ -152,11 +160,11 @@ const features = [
       <!-- Réassurance -->
       <section class="mx-auto max-w-4xl px-4 py-12">
         <div class="panel reassurance">
-          <h2 class="reassurance__title">Gratuit, sans email — juste un pseudo</h2>
+          <h2 class="reassurance__title">Gratuit, sans email. Juste un pseudo.</h2>
           <p class="reassurance__body">
-            Aucune adresse email n'est collectée : tu crées un compte avec un simple pseudonyme.
-            Tes données de carte viennent de Scryfall, les statistiques de popularité d'EDHREC —
-            rien n'est revendu, l'application reste gratuite.
+            Aucune adresse email n'est demandée : tu crées un compte avec un simple pseudo.
+            Les données de cartes viennent de Scryfall, les statistiques de popularité d'EDHREC.
+            Rien n'est revendu, et l'appli reste gratuite.
           </p>
           <div class="mt-6">
             <NuxtLink v-if="!user" to="/register" class="btn btn--primary px-6 py-2.5 text-base">Créer mon compte</NuxtLink>
