@@ -65,6 +65,17 @@ const result = computed(() => {
   })
 })
 
+// Indicateurs de chargement locaux pour piloter les skeletons (aucune progression
+// chiffrable ici : résolution par nom + prix se font en un lot).
+const resolvingNames = ref(false)
+const resolvingPrices = ref(false)
+// Compteurs de résolutions en vol : le watcher peut se relancer avant la fin
+// d'un await (changement de deck/decklist rapide). On ne repasse le flag à
+// false que lorsque la dernière résolution se termine, sinon le skeleton
+// clignote/disparaît prématurément.
+let namesInflight = 0
+let pricesInflight = 0
+
 /** Tente de valoriser les cartes manquantes non résolues localement (nom seul), une seule fois par nom. */
 const attemptedNames = new Set<string>()
 watch(
@@ -76,7 +87,13 @@ watch(
       .filter((name) => !attemptedNames.has(name.toLowerCase()))
     if (namesToTry.length === 0) return
     namesToTry.forEach((name) => attemptedNames.add(name.toLowerCase()))
-    await store.resolveByNames(namesToTry)
+    namesInflight++
+    resolvingNames.value = true
+    try {
+      await store.resolveByNames(namesToTry)
+    } finally {
+      if (--namesInflight === 0) resolvingNames.value = false
+    }
   },
   { immediate: true },
 )
@@ -95,7 +112,13 @@ watch(
     const oracleIds = missing
       .map((item) => thumbnailFor(item.name)?.oracleId)
       .filter((id): id is string => Boolean(id))
-    await store.fetchCheapest(oracleIds)
+    pricesInflight++
+    resolvingPrices.value = true
+    try {
+      await store.fetchCheapest(oracleIds)
+    } finally {
+      if (--pricesInflight === 0) resolvingPrices.value = false
+    }
   },
   { immediate: true },
 )
@@ -210,7 +233,7 @@ function openCardDetail(name: string): void {
       Inclure les autres éditions
     </label>
 
-    <section v-if="result" class="space-y-6 panel p-6 ">
+    <section v-if="result" class="space-y-6 panel p-4 sm:p-6 ">
       <div class="flex flex-wrap items-center gap-6">
         <div
           class="ring relative flex h-32 w-32 items-center justify-center"
@@ -257,19 +280,25 @@ function openCardDetail(name: string): void {
             @click="openCardDetail(item.name)"
             @keydown.enter="openCardDetail(item.name)"
           >
-            <CardHoverImage :small="thumbnailFor(item.name)?.imageSmall" :normal="thumbnailFor(item.name)?.imageNormal" :alt="item.name" />
+            <CardHoverImage :small="thumbnailFor(item.name)?.imageSmall" :normal="thumbnailFor(item.name)?.imageNormal" :alt="item.name" :loading="resolvingNames" />
             <div class="flex-1">
               <p class="font-medium">{{ item.name }}</p>
               <p class="text-xs text-muted">{{ item.owned }}/{{ item.needed }} possédée(s)</p>
             </div>
             <div class="text-right text-xs text-muted">
-              <p>
-                {{ formatEur(item.unitPrice) }} / u.
-                <span v-if="item.cheapestSet" class="uppercase text-gold">· {{ item.cheapestSet }}</span>
-              </p>
-              <p class="font-medium text-muted">
-                {{ item.subtotal !== null ? formatEur(item.subtotal.toFixed(2)) : '—' }}
-              </p>
+              <template v-if="resolvingPrices && item.unitPrice == null">
+                <span class="skeleton ml-auto block h-3 w-16 rounded" aria-hidden="true" />
+                <span class="skeleton ml-auto mt-1 block h-3 w-10 rounded" aria-hidden="true" />
+              </template>
+              <template v-else>
+                <p>
+                  {{ formatEur(item.unitPrice) }} / u.
+                  <span v-if="item.cheapestSet" class="uppercase text-gold">· {{ item.cheapestSet }}</span>
+                </p>
+                <p class="font-medium text-muted">
+                  {{ item.subtotal !== null ? formatEur(item.subtotal.toFixed(2)) : '—' }}
+                </p>
+              </template>
             </div>
             <span class="badge badge--missing">-{{ item.missingQty }}</span>
           </li>

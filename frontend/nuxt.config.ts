@@ -69,15 +69,8 @@ export default defineNuxtConfig({
             expiration: { maxEntries: 2000, maxAgeSeconds: 60 * 60 * 24 * 30 },
           },
         },
-        {
-          // Symboles de mana SVG Scryfall : cache long côté client
-          urlPattern: /^https:\/\/svgs\.scryfall\.io\/.*/,
-          handler: 'CacheFirst',
-          options: {
-            cacheName: 'scryfall-mana-symbols',
-            expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 30 },
-          },
-        },
+        // Les symboles de mana ne sont plus hotlinkés : servis depuis public/mana/
+        // et précachés via globPatterns (**/*.svg).
       ],
     },
     client: {

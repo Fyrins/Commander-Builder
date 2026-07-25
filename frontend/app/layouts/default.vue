@@ -2,19 +2,25 @@
 const colorMode = useColorMode()
 const { user, logout } = useAuth()
 const router = useRouter()
+const route = useRoute()
 
 const navItems = [
-  { to: '/', label: 'Inventaire' },
+  { to: '/inventaire', label: 'Inventaire' },
   { to: '/commanders', label: 'Mes commandants' },
   { to: '/compare', label: 'Comparateur' },
   { to: '/decks', label: 'Decks' },
 ]
+
+// Menu mobile (hamburger) : replié par défaut, se ferme à chaque navigation.
+const mobileOpen = ref(false)
+watch(() => route.path, () => { mobileOpen.value = false })
 
 function toggleColorMode() {
   colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'
 }
 
 async function handleLogout() {
+  mobileOpen.value = false
   await logout()
   await router.push('/login')
 }
@@ -23,13 +29,14 @@ async function handleLogout() {
 <template>
   <div class="min-h-screen">
     <header class="header">
-      <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-3">
-        <div class="flex flex-wrap items-center gap-6">
-          <NuxtLink to="/" class="flex items-center gap-2.5">
+      <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+        <div class="flex items-center gap-6">
+          <NuxtLink to="/inventaire" class="flex items-center gap-2.5">
             <AppSigil class="h-7 w-7 shrink-0" />
             <span class="brand">Commander Builder</span>
           </NuxtLink>
-          <nav class="flex flex-wrap gap-1">
+          <!-- Nav inline : desktop uniquement -->
+          <nav class="hidden gap-1 sm:flex">
             <NuxtLink
               v-for="item in navItems"
               :key="item.to"
@@ -42,7 +49,7 @@ async function handleLogout() {
           </nav>
         </div>
 
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 sm:gap-3">
           <button
             type="button"
             class="btn btn--ghost p-2"
@@ -58,16 +65,57 @@ async function handleLogout() {
             </svg>
           </button>
 
+          <!-- Desktop : pseudo + Déconnexion -->
           <span v-if="user" class="hidden text-sm sm:inline" style="color: var(--ink-text-muted)">{{ user.username }}</span>
           <button
             v-if="user"
             type="button"
-            class="btn btn--secondary"
+            class="btn btn--secondary max-sm:hidden"
             @click="handleLogout"
           >
             Déconnexion
           </button>
+
+          <!-- Mobile : hamburger -->
+          <button
+            type="button"
+            class="btn btn--ghost p-2 sm:hidden"
+            :aria-label="mobileOpen ? 'Fermer le menu' : 'Ouvrir le menu'"
+            :aria-expanded="mobileOpen"
+            aria-controls="mobile-nav"
+            @click="mobileOpen = !mobileOpen"
+          >
+            <svg v-if="!mobileOpen" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" class="h-5 w-5">
+              <path d="M3.5 6.5h17M3.5 12h17M3.5 17.5h17" />
+            </svg>
+            <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" class="h-5 w-5">
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
         </div>
+      </div>
+
+      <!-- Panneau mobile déroulant -->
+      <div v-if="mobileOpen" id="mobile-nav" class="mobile-nav sm:hidden">
+        <nav class="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3">
+          <NuxtLink
+            v-for="item in navItems"
+            :key="item.to"
+            :to="item.to"
+            class="nav-link block"
+            active-class="nav-link--active"
+          >
+            {{ item.label }}
+          </NuxtLink>
+          <button
+            v-if="user"
+            type="button"
+            class="btn btn--secondary mt-2 w-full justify-center"
+            @click="handleLogout"
+          >
+            Déconnexion
+          </button>
+        </nav>
       </div>
     </header>
 
@@ -120,6 +168,16 @@ async function handleLogout() {
   color: var(--gold);
   background-color: var(--ink-panel-alt);
   box-shadow: inset 0 0 0 1px var(--gold-border);
+}
+
+/* Panneau mobile : prolonge la barre, mêmes bordure/fond translucides. */
+.mobile-nav {
+  border-top: 1px solid var(--ink-border);
+  background-color: color-mix(in srgb, var(--ink-bg) 92%, transparent);
+}
+.mobile-nav .nav-link {
+  padding: 0.6rem 0.75rem;
+  font-size: 0.95rem;
 }
 
 .footer__legal {

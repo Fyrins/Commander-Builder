@@ -582,15 +582,29 @@ function openCardDetail(name: string): void {
         <ColorPips v-if="commanderCard" :colors="commanderCard.colorIdentity" />
       </div>
 
-      <p v-if="edhrecLoading" class="text-sm text-muted">Chargement des données EDHREC…</p>
       <p v-if="edhrecError" class="text-sm text-red-600 dark:text-red-400">{{ edhrecError }}</p>
-      <p v-if="averageLoading" class="text-sm text-muted">Chargement du deck moyen…</p>
       <p v-if="averageError" class="text-sm text-red-600 dark:text-red-400">{{ averageError }}</p>
+
+      <!-- Panneau principal en attente du deck moyen : anneau + budget + liste d'achat -->
+      <section v-if="averageLoading" class="space-y-4 panel p-4 sm:p-6" role="status" aria-label="Chargement du deck moyen…">
+        <div class="flex flex-wrap items-center gap-6">
+          <div class="skeleton h-28 w-28 shrink-0 rounded-full" />
+          <div class="flex-1 space-y-2">
+            <div class="skeleton h-4 w-48 rounded" />
+            <div class="skeleton h-4 w-64 rounded" />
+            <div class="skeleton h-4 w-40 rounded" />
+          </div>
+        </div>
+        <div class="space-y-2">
+          <div class="skeleton h-5 w-40 rounded" />
+          <CardSkeleton variant="row" :count="6" />
+        </div>
+      </section>
 
       <template v-if="averageData">
         <p v-if="averagePricesLoading || pricesLoading" class="text-sm text-muted">Récupération des prix…</p>
 
-        <section class="space-y-4 panel p-6 ">
+        <section class="space-y-4 panel p-4 sm:p-6 ">
           <div class="flex flex-wrap items-center gap-6">
             <div
               class="ring relative flex h-28 w-28 items-center justify-center"
@@ -642,14 +656,25 @@ function openCardDetail(name: string): void {
                 @keydown.enter="openCardDetail(card.name)"
               >
                 <CardHoverImage :small="thumbnailFor(card.name)?.imageSmall" :normal="thumbnailFor(card.name)?.imageNormal" :alt="card.name" />
-                <span class="flex-1 font-medium">{{ card.name }}</span>
-                <span v-if="card.isCommander" class="text-xs font-medium text-muted">Commandant</span>
-                <span v-else-if="card.inclusion !== null" class="text-xs text-muted">{{ Math.round(card.inclusion * 1000) / 10 }}% des decks</span>
-                <span v-else class="text-xs text-muted">—</span>
-                <span class="text-right text-xs font-medium text-muted">
-                  {{ formatEur(priceFor(card.name)) }}
-                  <span v-if="cheapestSetFor(card.name)" class="uppercase text-gold">· {{ cheapestSetFor(card.name) }}</span>
-                </span>
+                <div class="flex min-w-0 flex-1 flex-col gap-y-0.5 sm:flex-row sm:items-center sm:gap-3">
+                  <span class="min-w-0 flex-1 font-medium">{{ card.name }}</span>
+                  <div class="flex items-center gap-3 text-xs text-muted sm:justify-end">
+                    <span v-if="card.isCommander" class="font-medium">Commandant</span>
+                    <span v-else-if="card.inclusion !== null">{{ Math.round(card.inclusion * 1000) / 10 }}% des decks</span>
+                    <span v-else>—</span>
+                    <span class="font-medium">
+                      <span
+                        v-if="(averagePricesLoading || pricesLoading) && !priceFor(card.name)"
+                        class="skeleton inline-block h-3 w-12 rounded align-middle"
+                        aria-hidden="true"
+                      />
+                      <template v-else>
+                        {{ formatEur(priceFor(card.name)) }}
+                        <span v-if="cheapestSetFor(card.name)" class="uppercase text-gold">· {{ cheapestSetFor(card.name) }}</span>
+                      </template>
+                    </span>
+                  </div>
+                </div>
               </li>
             </ul>
           </div>
@@ -658,7 +683,22 @@ function openCardDetail(name: string): void {
         <DeckStats v-if="averageScore" :entries="averageEntries" :lookup="store.lookup.value" :total="averageScore.total" />
       </template>
 
-      <details v-if="edhrecData" class="panel p-4 ">
+      <section
+        v-if="edhrecLoading"
+        class="panel p-4 space-y-4"
+        role="status"
+        aria-label="Chargement des recommandations EDHREC…"
+      >
+        <div class="skeleton h-6 w-56 rounded" />
+        <div v-for="i in 2" :key="i" class="space-y-3">
+          <div class="skeleton h-4 w-32 rounded" />
+          <div class="grid gap-2 sm:grid-cols-2">
+            <CardSkeleton variant="row" :count="4" />
+          </div>
+        </div>
+      </section>
+
+      <details v-else-if="edhrecData" class="panel p-4 ">
         <summary class="cursor-pointer text-lg font-semibold">Recommandations par catégorie</summary>
         <p class="mt-2 text-xs text-muted">
           Catalogue EDHREC — sans influence sur la complétion ni le budget ci-dessus.
@@ -688,7 +728,12 @@ function openCardDetail(name: string): void {
               <span class="flex-1 truncate" :title="card.name">{{ card.name }}</span>
               <span class="text-xs text-muted">{{ Math.round(card.inclusion * 1000) / 10 }}%</span>
               <span v-if="!isOwned(card.name)" class="text-right text-xs font-medium text-muted">
-                {{ formatEur(priceFor(card.name)) }}
+                <span
+                  v-if="pricesLoading && !priceFor(card.name)"
+                  class="skeleton inline-block h-3 w-12 rounded align-middle"
+                  aria-hidden="true"
+                />
+                <template v-else>{{ formatEur(priceFor(card.name)) }}</template>
               </span>
               <span class="badge" :class="isOwned(card.name) ? 'badge--owned' : 'badge--missing'">
                 {{ isOwned(card.name) ? 'Possédée' : 'Manquante' }}
@@ -764,8 +809,16 @@ function openCardDetail(name: string): void {
           Analyse des decks {{ rankingProgress.done }}/{{ rankingProgress.total }}…
         </p>
         <ProgressBar :percent="rankingProgress.total ? (rankingProgress.done / rankingProgress.total) * 100 : 0" />
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" role="status" aria-label="Chargement des decks…">
+          <CardSkeleton v-for="i in 6" :key="i" variant="deck-card" />
+        </div>
       </div>
-      <p v-else-if="rankingResolving" class="text-sm text-muted">Résolution des cartes…</p>
+      <div v-else-if="rankingResolving" class="space-y-2">
+        <p class="text-sm text-muted">Résolution des cartes…</p>
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3" role="status" aria-label="Résolution des cartes…">
+          <CardSkeleton v-for="i in 6" :key="i" variant="deck-card" />
+        </div>
+      </div>
       <p v-if="rankingError" class="text-sm text-red-600 dark:text-red-400">{{ rankingError }}</p>
 
       <div v-if="rankingState" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
