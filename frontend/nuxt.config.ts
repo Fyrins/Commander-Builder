@@ -10,6 +10,14 @@ export default defineNuxtConfig({
     head: {
       title: 'Commander Builder',
       htmlAttrs: { lang: 'fr' },
+      link: [
+        { rel: 'icon', href: '/favicon.ico', sizes: '32x32' },
+        { rel: 'icon', type: 'image/svg+xml', href: '/icons/icon.svg' },
+        { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+      ],
+      meta: [
+        { name: 'theme-color', content: '#0f0c08' },
+      ],
     },
   },
 
@@ -49,12 +57,18 @@ export default defineNuxtConfig({
     manifest: {
       name: 'Commander Builder',
       short_name: 'Commander Builder',
+      lang: 'fr',
       description:
         'Importez votre collection Magic, découvrez vos commandants jouables et complétez vos decks Commander.',
       theme_color: '#0f0c08',
       background_color: '#0f0c08',
       display: 'standalone',
-      icons: [{ src: 'icons/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }],
+      icons: [
+        { src: 'icons/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+        { src: 'icons/pwa-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+        { src: 'icons/pwa-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+        { src: 'icons/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+      ],
     },
     workbox: {
       navigateFallback: '/',
