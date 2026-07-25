@@ -31,23 +31,10 @@ jobs:
           FTP_USER: ${{ secrets.FTP_USERNAME }}
           FTP_PASS: ${{ secrets.FTP_PASSWORD }}
         run: |
-          lftp -c "
-            set ftp:ssl-allow true;
-            set ssl:verify-certificate no;
-            set ftp:ssl-force true;
-            set ftp:ssl-protect-data true;
-            set net:max-retries 5;
-            set net:timeout 30;
-            set net:reconnect-interval-base 5;
-            set mirror:parallel-transfer-count 2;
-            open -u \"\$FTP_USER\",\"\$FTP_PASS\" \"\$FTP_HOST\";
-            mirror -R --delete --verbose \
-              --exclude '\.env\.local$' \
-              --exclude '^config/jwt/' \
-              --exclude '^var/' \
-              --exclude '^vendor/' \
-              ./api/ /api/ ;
-          "
+          # CMDS en quotes simples : littéral (regex $ et excludes préservés).
+          # bash substitue les identifiants dans les arguments de connexion.
+          CMDS='set ftp:ssl-allow true; set ftp:ssl-force true; set ftp:ssl-protect-data true; set ssl:verify-certificate yes; set net:max-retries 5; set net:timeout 30; set net:reconnect-interval-base 5; set mirror:parallel-transfer-count 2; mirror -R --delete --verbose --exclude "\.env\.local$" --exclude "^config/jwt/" --exclude "^var/" --exclude "^vendor/" ./api/ /api/; bye'
+          lftp -u "$FTP_USER,$FTP_PASS" "ftp://$FTP_HOST" -e "$CMDS"
 
       - name: Rappel composer / migrations si nécessaire
         run: |
