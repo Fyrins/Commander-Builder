@@ -586,7 +586,7 @@ function openCardDetail(name: string): void {
       <p v-if="averageError" class="text-sm text-red-600 dark:text-red-400">{{ averageError }}</p>
 
       <!-- Panneau principal en attente du deck moyen : anneau + budget + liste d'achat -->
-      <section v-if="averageLoading" class="space-y-4 panel p-6" role="status" aria-label="Chargement du deck moyen…">
+      <section v-if="averageLoading" class="space-y-4 panel p-4 sm:p-6" role="status" aria-label="Chargement du deck moyen…">
         <div class="flex flex-wrap items-center gap-6">
           <div class="skeleton h-28 w-28 shrink-0 rounded-full" />
           <div class="flex-1 space-y-2">
@@ -604,7 +604,7 @@ function openCardDetail(name: string): void {
       <template v-if="averageData">
         <p v-if="averagePricesLoading || pricesLoading" class="text-sm text-muted">Récupération des prix…</p>
 
-        <section class="space-y-4 panel p-6 ">
+        <section class="space-y-4 panel p-4 sm:p-6 ">
           <div class="flex flex-wrap items-center gap-6">
             <div
               class="ring relative flex h-28 w-28 items-center justify-center"
@@ -656,21 +656,25 @@ function openCardDetail(name: string): void {
                 @keydown.enter="openCardDetail(card.name)"
               >
                 <CardHoverImage :small="thumbnailFor(card.name)?.imageSmall" :normal="thumbnailFor(card.name)?.imageNormal" :alt="card.name" />
-                <span class="flex-1 font-medium">{{ card.name }}</span>
-                <span v-if="card.isCommander" class="text-xs font-medium text-muted">Commandant</span>
-                <span v-else-if="card.inclusion !== null" class="text-xs text-muted">{{ Math.round(card.inclusion * 1000) / 10 }}% des decks</span>
-                <span v-else class="text-xs text-muted">—</span>
-                <span class="text-right text-xs font-medium text-muted">
-                  <span
-                    v-if="(averagePricesLoading || pricesLoading) && !priceFor(card.name)"
-                    class="skeleton inline-block h-3 w-12 rounded align-middle"
-                    aria-hidden="true"
-                  />
-                  <template v-else>
-                    {{ formatEur(priceFor(card.name)) }}
-                    <span v-if="cheapestSetFor(card.name)" class="uppercase text-gold">· {{ cheapestSetFor(card.name) }}</span>
-                  </template>
-                </span>
+                <div class="flex min-w-0 flex-1 flex-col gap-y-0.5 sm:flex-row sm:items-center sm:gap-3">
+                  <span class="min-w-0 flex-1 font-medium">{{ card.name }}</span>
+                  <div class="flex items-center gap-3 text-xs text-muted sm:justify-end">
+                    <span v-if="card.isCommander" class="font-medium">Commandant</span>
+                    <span v-else-if="card.inclusion !== null">{{ Math.round(card.inclusion * 1000) / 10 }}% des decks</span>
+                    <span v-else>—</span>
+                    <span class="font-medium">
+                      <span
+                        v-if="(averagePricesLoading || pricesLoading) && !priceFor(card.name)"
+                        class="skeleton inline-block h-3 w-12 rounded align-middle"
+                        aria-hidden="true"
+                      />
+                      <template v-else>
+                        {{ formatEur(priceFor(card.name)) }}
+                        <span v-if="cheapestSetFor(card.name)" class="uppercase text-gold">· {{ cheapestSetFor(card.name) }}</span>
+                      </template>
+                    </span>
+                  </div>
+                </div>
               </li>
             </ul>
           </div>
