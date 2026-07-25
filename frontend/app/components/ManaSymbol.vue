@@ -20,7 +20,10 @@ const style = computed(() => {
 
 /** Code Scryfall sans accolades ni slash, ex. `{G/W}` → `GW`, `{2/U}` → `2U`. */
 const svgCode = computed(() => props.code.toUpperCase().replace('/', ''))
-const svgUrl = computed(() => `https://svgs.scryfall.io/card-symbols/${svgCode.value}.svg`)
+// Symboles servis depuis nos assets (public/mana/, précachés par le SW) plutôt
+// que hotlinkés depuis le CDN Scryfall : évite une requête externe lazy par
+// symbole (très lent en 3G au premier affichage).
+const svgUrl = computed(() => `/mana/${svgCode.value}.svg`)
 
 // Le disque CSS BEM sert de repli si l'image officielle échoue à charger.
 const svgFailed = ref(false)
