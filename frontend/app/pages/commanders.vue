@@ -72,7 +72,21 @@ const filteredCommanders = computed(() => {
       </button>
     </div>
 
-    <p v-if="commanders.length === 0" class="text-sm text-muted">
+    <div v-if="store.loading.value" class="space-y-4">
+      <ProgressBar
+        label="Résolution de votre collection…"
+        :percent="store.progress.value.total ? (store.progress.value.done / store.progress.value.total) * 100 : 0"
+      />
+      <div
+        class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+        role="status"
+        aria-label="Chargement des commandants…"
+      >
+        <CardSkeleton v-for="i in 10" :key="i" variant="grid-card" />
+      </div>
+    </div>
+
+    <p v-else-if="commanders.length === 0" class="text-sm text-muted">
       Aucun commandant détecté dans votre pool pour l'instant.
     </p>
     <p v-else-if="filteredCommanders.length === 0" class="text-sm text-muted">

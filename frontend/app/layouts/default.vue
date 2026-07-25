@@ -4,7 +4,7 @@ const { user, logout } = useAuth()
 const router = useRouter()
 
 const navItems = [
-  { to: '/', label: 'Inventaire' },
+  { to: '/inventaire', label: 'Inventaire' },
   { to: '/commanders', label: 'Mes commandants' },
   { to: '/compare', label: 'Comparateur' },
   { to: '/decks', label: 'Decks' },
@@ -25,7 +25,7 @@ async function handleLogout() {
     <header class="header">
       <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-3">
         <div class="flex flex-wrap items-center gap-6">
-          <NuxtLink to="/" class="flex items-center gap-2.5">
+          <NuxtLink to="/inventaire" class="flex items-center gap-2.5">
             <AppSigil class="h-7 w-7 shrink-0" />
             <span class="brand">Commander Builder</span>
           </NuxtLink>

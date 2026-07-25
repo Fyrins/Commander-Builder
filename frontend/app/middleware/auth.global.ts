@@ -1,8 +1,10 @@
 /**
- * Garde d'authentification globale : redirige vers /login si non connecté,
- * sauf sur les pages publiques (login, register).
+ * Garde d'authentification globale.
+ * - `/` (landing), `/login`, `/register` sont publiques.
+ * - Non connecté sur une route protégée → /login.
+ * - Connecté sur la landing → /inventaire (son accueil applicatif).
  */
-const PUBLIC_ROUTES = new Set(['/login', '/register'])
+const PUBLIC_ROUTES = new Set(['/', '/login', '/register'])
 
 export default defineNuxtRouteMiddleware(async (to) => {
   const { user, initialized, fetchMe } = useAuth()
@@ -19,7 +21,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return navigateTo('/login')
   }
 
-  if (user.value && isPublic) {
-    return navigateTo('/')
+  // Un utilisateur connecté qui atterrit sur la landing ou l'auth → son inventaire.
+  if (user.value && (path === '/' || path === '/login' || path === '/register')) {
+    return navigateTo('/inventaire')
   }
 })
