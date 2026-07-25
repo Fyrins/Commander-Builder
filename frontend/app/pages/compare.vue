@@ -65,6 +65,11 @@ const result = computed(() => {
   })
 })
 
+// Indicateurs de chargement locaux pour piloter les skeletons (aucune progression
+// chiffrable ici : résolution par nom + prix se font en un lot).
+const resolvingNames = ref(false)
+const resolvingPrices = ref(false)
+
 /** Tente de valoriser les cartes manquantes non résolues localement (nom seul), une seule fois par nom. */
 const attemptedNames = new Set<string>()
 watch(
@@ -76,7 +81,12 @@ watch(
       .filter((name) => !attemptedNames.has(name.toLowerCase()))
     if (namesToTry.length === 0) return
     namesToTry.forEach((name) => attemptedNames.add(name.toLowerCase()))
-    await store.resolveByNames(namesToTry)
+    resolvingNames.value = true
+    try {
+      await store.resolveByNames(namesToTry)
+    } finally {
+      resolvingNames.value = false
+    }
   },
   { immediate: true },
 )
@@ -95,7 +105,12 @@ watch(
     const oracleIds = missing
       .map((item) => thumbnailFor(item.name)?.oracleId)
       .filter((id): id is string => Boolean(id))
-    await store.fetchCheapest(oracleIds)
+    resolvingPrices.value = true
+    try {
+      await store.fetchCheapest(oracleIds)
+    } finally {
+      resolvingPrices.value = false
+    }
   },
   { immediate: true },
 )
@@ -257,19 +272,25 @@ function openCardDetail(name: string): void {
             @click="openCardDetail(item.name)"
             @keydown.enter="openCardDetail(item.name)"
           >
-            <CardHoverImage :small="thumbnailFor(item.name)?.imageSmall" :normal="thumbnailFor(item.name)?.imageNormal" :alt="item.name" />
+            <CardHoverImage :small="thumbnailFor(item.name)?.imageSmall" :normal="thumbnailFor(item.name)?.imageNormal" :alt="item.name" :loading="resolvingNames" />
             <div class="flex-1">
               <p class="font-medium">{{ item.name }}</p>
               <p class="text-xs text-muted">{{ item.owned }}/{{ item.needed }} possédée(s)</p>
             </div>
             <div class="text-right text-xs text-muted">
-              <p>
-                {{ formatEur(item.unitPrice) }} / u.
-                <span v-if="item.cheapestSet" class="uppercase text-gold">· {{ item.cheapestSet }}</span>
-              </p>
-              <p class="font-medium text-muted">
-                {{ item.subtotal !== null ? formatEur(item.subtotal.toFixed(2)) : '—' }}
-              </p>
+              <template v-if="resolvingPrices && item.unitPrice == null">
+                <span class="skeleton ml-auto block h-3 w-16 rounded" aria-hidden="true" />
+                <span class="skeleton ml-auto mt-1 block h-3 w-10 rounded" aria-hidden="true" />
+              </template>
+              <template v-else>
+                <p>
+                  {{ formatEur(item.unitPrice) }} / u.
+                  <span v-if="item.cheapestSet" class="uppercase text-gold">· {{ item.cheapestSet }}</span>
+                </p>
+                <p class="font-medium text-muted">
+                  {{ item.subtotal !== null ? formatEur(item.subtotal.toFixed(2)) : '—' }}
+                </p>
+              </template>
             </div>
             <span class="badge badge--missing">-{{ item.missingQty }}</span>
           </li>

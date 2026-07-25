@@ -85,7 +85,7 @@ async function handleDelete(deck: ApiDeck) {
       />
     </div>
 
-    <section v-if="!store.loading.value && store.collectionRows.value.length === 0">
+    <section v-else-if="store.collectionRows.value.length === 0">
       <h1 class="mb-2 text-2xl font-semibold">Bienvenue</h1>
       <p class="mb-6 text-muted">
         Importez votre collection ManaBox et vos decklists pour commencer.

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-defineProps<{ small?: string | null; normal?: string | null; alt: string }>()
+defineProps<{ small?: string | null; normal?: string | null; alt: string; loading?: boolean }>()
 </script>
 
 <template>
@@ -11,6 +11,11 @@ defineProps<{ small?: string | null; normal?: string | null; alt: string }>()
       loading="lazy"
       class="h-14 w-auto rounded shadow-sm ring-1 ring-black/10 dark:ring-white/10"
     >
+    <span
+      v-else-if="loading"
+      class="skeleton block h-14 w-10 rounded"
+      aria-hidden="true"
+    />
     <span
       v-else
       class="flex h-14 w-10 items-center justify-center rounded surface-alt text-[10px] text-muted "

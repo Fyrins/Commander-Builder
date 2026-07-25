@@ -508,6 +508,24 @@ table {
   }
 
   /* ---------------------------------------------------------------------
+   * .skeleton — placeholder de chargement (shimmer thématique)
+   * Réutilise shimmer-sweep (déjà consommé par .progress-fill--loading).
+   * Le reduce-motion global (animation-duration: 0.001ms !important sur *)
+   * fige l'animation, comme pour la barre de progression.
+   * ------------------------------------------------------------------- */
+  .skeleton {
+    background-color: var(--ink-panel-alt);
+    background-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--ink-border-strong) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer-sweep 1.6s ease-in-out infinite;
+  }
+
+  /* ---------------------------------------------------------------------
    * .sigil — petite couronne géométrique (marque)
    * ------------------------------------------------------------------- */
   .sigil {
