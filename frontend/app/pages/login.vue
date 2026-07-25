@@ -16,7 +16,7 @@ async function handleSubmit() {
   pending.value = true
   try {
     await login(username.value, password.value, captchaToken.value)
-    await router.push('/')
+    await router.push('/inventaire')
   } catch (error: unknown) {
     const status = (error as { response?: { status?: number } })?.response?.status
     if (status === 429) errorMessage.value = 'Trop de tentatives. Réessayez dans une minute.'

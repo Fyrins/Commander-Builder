@@ -23,7 +23,7 @@ async function handleSubmit() {
   pending.value = true
   try {
     await register(username.value, password.value, captchaToken.value)
-    await router.push('/')
+    await router.push('/inventaire')
   } catch (error: unknown) {
     const status = (error as { response?: { status?: number } })?.response?.status
     if (status === 409) {
